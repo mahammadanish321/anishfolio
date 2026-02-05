@@ -381,58 +381,7 @@ function animateSkillBars() {
     skillBars.forEach(bar => observer.observe(bar));
 }
 
-// Enhanced Testimonials slider with proper state management
-let currentSlide = 0;
-let testimonialInterval = null;
-const testimonialCards = document.querySelectorAll('.testimonial-card');
-const navDots = document.querySelectorAll('.nav-dot');
-
-function showSlide(index) {
-    // Ensure index is within bounds
-    currentSlide = Math.max(0, Math.min(index, testimonialCards.length - 1));
-
-    testimonialCards.forEach((card, i) => {
-        card.classList.toggle('active', i === currentSlide);
-    });
-
-    navDots.forEach((dot, i) => {
-        dot.classList.toggle('active', i === currentSlide);
-    });
-}
-
-function startTestimonialSlider() {
-    if (testimonialInterval) clearInterval(testimonialInterval);
-
-    testimonialInterval = setInterval(() => {
-        currentSlide = (currentSlide + 1) % testimonialCards.length;
-        showSlide(currentSlide);
-    }, 5000);
-}
-
-function stopTestimonialSlider() {
-    if (testimonialInterval) {
-        clearInterval(testimonialInterval);
-        testimonialInterval = null;
-    }
-}
-
-// Add click handlers to navigation dots
-navDots.forEach((dot, index) => {
-    dot.addEventListener('click', (e) => {
-        e.preventDefault();
-        playClickSound();
-        showSlide(index);
-        stopTestimonialSlider();
-        setTimeout(startTestimonialSlider, 3000); // Restart after 3 seconds
-    });
-});
-
-// Pause on hover
-const testimonialsSection = document.querySelector('.testimonials');
-if (testimonialsSection) {
-    testimonialsSection.addEventListener('mouseenter', stopTestimonialSlider);
-    testimonialsSection.addEventListener('mouseleave', startTestimonialSlider);
-}
+// Testimonials slider logic removed as section was replaced
 
 // Contact form handled in email.js
 // Logic moved there to avoid conflicts and enable real EmailJS sending
@@ -543,7 +492,6 @@ function startAnimations() {
         setTimeout(() => {
             animateSkillBars();
             handleScrollAnimations();
-            startTestimonialSlider();
             updateNavbar();
             addClickSounds();
             loadSavedTheme();
@@ -561,9 +509,6 @@ document.addEventListener('click', () => {
 
 // Cleanup function for page unload
 window.addEventListener('beforeunload', () => {
-    if (testimonialInterval) {
-        clearInterval(testimonialInterval);
-    }
     if (scrollTimeout) {
         clearTimeout(scrollTimeout);
     }
