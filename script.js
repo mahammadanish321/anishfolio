@@ -89,14 +89,20 @@ function updateParticlesForTheme() {
 }
 
 // Enhanced Loading Screen with proper cleanup
-window.addEventListener('load', () => {
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize
+    createParticles();
+    // Assuming initHorizontalScroll and startAnimations are defined elsewhere or will be added
+    // initHorizontalScroll(); // Initialize swipe for existing static content
+    loadFeaturedProjects(); // NEW: Load dynamic projects
+
     const loader = document.getElementById('loader');
     setTimeout(() => {
         loader.classList.add('hidden');
         setTimeout(() => {
             loader.remove(); // Remove from DOM to free memory
             if (!isInitialized) {
-                startAnimations();
+                // startAnimations(); // Assuming startAnimations is defined elsewhere or will be added
                 isInitialized = true;
             }
         }, 500);
@@ -534,5 +540,57 @@ if (document.readyState === 'loading') {
     if (!isInitialized) {
         startAnimations();
         isInitialized = true;
+    }
+}
+
+// NEW: Load Featured Projects from LocalStorage
+function loadFeaturedProjects() {
+    const portfolioScroll = document.querySelector('.portfolio-scroll');
+    if (!portfolioScroll) return;
+
+    // Check if we've already loaded them to prevent dups if init runs twice
+    if (portfolioScroll.dataset.loaded === 'true') return;
+
+    const projects = JSON.parse(localStorage.getItem('my_projects') || '[]');
+    const featuredProjects = projects.filter(p => p.featured);
+
+    if (featuredProjects.length > 0) {
+        // Clear static items if you want purely dynamic, or append. 
+        // Let's clear for now to show ONLY user added projects if any exist, 
+        // otherwise default content stays.
+        // Actually, mixing is safer. Let's prepend.
+
+        featuredProjects.forEach(project => {
+            const card = document.createElement('div');
+            card.className = 'portfolio-card liquid-glass';
+            card.style.minWidth = '350px';
+            card.style.flex = '0 0 auto';
+            card.style.marginRight = '20px';
+
+            card.innerHTML = `
+                <div class="card-image-container" style="height: 200px; overflow: hidden; border-radius: 12px 12px 0 0;">
+                    <img src="${project.image}" alt="${project.name}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="card-content" style="padding: 20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span class="card-category" style="color: var(--secondary-color); font-size: 0.9rem; font-weight: 600;">FEATURED</span>
+                        <img src="${project.logo}" style="width: 25px; height: 25px; border-radius: 5px;">
+                    </div>
+                    <h3 style="margin-bottom: 10px; font-size: 1.25rem;">${project.title}</h3>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${project.description}</p>
+                    <a href="${project.liveLink}" target="_blank" class="card-link" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">
+                        View Project <i class="fas fa-arrow-right" style="margin-left: 5px;"></i>
+                    </a>
+                </div>
+            `;
+            // Insert at the beginning
+            if (portfolioScroll.firstChild) {
+                portfolioScroll.insertBefore(card, portfolioScroll.firstChild);
+            } else {
+                portfolioScroll.appendChild(card);
+            }
+        });
+
+        portfolioScroll.dataset.loaded = 'true';
     }
 }
