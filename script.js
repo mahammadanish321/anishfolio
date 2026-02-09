@@ -4,6 +4,7 @@ let scrollTimeout = null;
 let audioContext = null;
 
 // Initialize Audio Context for click sounds
+// Initialize Audio Context for click sounds
 function initAudioContext() {
     if (!audioContext) {
         try {
@@ -12,29 +13,45 @@ function initAudioContext() {
             console.warn('Audio context not supported:', error);
         }
     }
+    // Resume context if suspended (common in modern browsers)
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    return audioContext;
 }
+
+// Global listener to unlock AudioContext on first interaction
+['click', 'touchstart', 'keydown'].forEach(event => {
+    window.addEventListener(event, () => {
+        if (!audioContext) initAudioContext();
+        if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+    }, { once: true });
+});
 
 // Optimized Click Sound Effect
 function playClickSound() {
-    if (!audioContext) return;
+    const ctx = initAudioContext();
+    if (!ctx) return;
 
     try {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
         oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        gainNode.connect(ctx.destination);
 
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+        // Immediate frequency set
+        oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
 
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        // Immediate gain set
+        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
 
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.1);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.1);
     } catch (error) {
-        console.warn('Sound playback failed:', error);
+        // console.warn('Sound playback failed:', error);
     }
 }
 
@@ -93,8 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     createParticles();
     // Assuming initHorizontalScroll and startAnimations are defined elsewhere or will be added
-    // initHorizontalScroll(); // Initialize swipe for existing static content
-    loadFeaturedProjects(); // NEW: Load dynamic projects
+    // initHorizontalScroll(); // Removed
+    loadProjects(); // NEW: Load dynamic projects
 
     const loader = document.getElementById('loader');
     setTimeout(() => {
@@ -412,76 +429,7 @@ function handleScrollAnimations() {
     elements.forEach(element => observer.observe(element));
 }
 
-// Portfolio horizontal scroll functionality with touch support
-const portfolioScroll = document.querySelector('.portfolio-scroll');
-const scrollLeftBtn = document.getElementById('scrollLeft');
-const scrollRightBtn = document.getElementById('scrollRight');
-
-if (portfolioScroll && scrollLeftBtn && scrollRightBtn) {
-    const cardWidth = 380; // Card width + gap
-
-    scrollLeftBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        playClickSound();
-        portfolioScroll.scrollBy({
-            left: -cardWidth,
-            behavior: 'smooth'
-        });
-    });
-
-    scrollRightBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        playClickSound();
-        portfolioScroll.scrollBy({
-            left: cardWidth,
-            behavior: 'smooth'
-        });
-    });
-
-    // Update scroll buttons based on scroll position
-    function updateScrollButtons() {
-        const scrollLeft = portfolioScroll.scrollLeft;
-        const maxScroll = portfolioScroll.scrollWidth - portfolioScroll.clientWidth;
-
-        scrollLeftBtn.style.opacity = scrollLeft > 0 ? '1' : '0.5';
-        scrollRightBtn.style.opacity = scrollLeft < maxScroll ? '1' : '0.5';
-        scrollLeftBtn.disabled = scrollLeft <= 0;
-        scrollRightBtn.disabled = scrollLeft >= maxScroll;
-    }
-
-    portfolioScroll.addEventListener('scroll', updateScrollButtons, { passive: true });
-    updateScrollButtons();
-
-    // Touch/swipe support
-    let isDown = false;
-    let startX;
-    let scrollLeftStart;
-
-    portfolioScroll.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startX = e.pageX - portfolioScroll.offsetLeft;
-        scrollLeftStart = portfolioScroll.scrollLeft;
-        portfolioScroll.style.cursor = 'grabbing';
-    });
-
-    portfolioScroll.addEventListener('mouseleave', () => {
-        isDown = false;
-        portfolioScroll.style.cursor = 'grab';
-    });
-
-    portfolioScroll.addEventListener('mouseup', () => {
-        isDown = false;
-        portfolioScroll.style.cursor = 'grab';
-    });
-
-    portfolioScroll.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - portfolioScroll.offsetLeft;
-        const walk = (x - startX) * 2;
-        portfolioScroll.scrollLeft = scrollLeftStart - walk;
-    });
-}
+// Portfolio horizontal scroll logic removed (replaced by grid)
 
 // Add click sound to all interactive elements
 function addClickSounds() {
@@ -543,54 +491,229 @@ if (document.readyState === 'loading') {
     }
 }
 
-// NEW: Load Featured Projects from LocalStorage
-function loadFeaturedProjects() {
-    const portfolioScroll = document.querySelector('.portfolio-scroll');
-    if (!portfolioScroll) return;
+// Load Projects from LocalStorage
+function loadProjects() {
+    const grid = document.getElementById('portfolioGrid');
+    if (!grid) return;
 
-    // Check if we've already loaded them to prevent dups if init runs twice
-    if (portfolioScroll.dataset.loaded === 'true') return;
+    // Load projects or initialize samples if empty
+    let projects = JSON.parse(localStorage.getItem('projects'));
 
-    const projects = JSON.parse(localStorage.getItem('my_projects') || '[]');
-    const featuredProjects = projects.filter(p => p.featured);
-
-    if (featuredProjects.length > 0) {
-        // Clear static items if you want purely dynamic, or append. 
-        // Let's clear for now to show ONLY user added projects if any exist, 
-        // otherwise default content stays.
-        // Actually, mixing is safer. Let's prepend.
-
-        featuredProjects.forEach(project => {
-            const card = document.createElement('div');
-            card.className = 'portfolio-card liquid-glass';
-            card.style.minWidth = '350px';
-            card.style.flex = '0 0 auto';
-            card.style.marginRight = '20px';
-
-            card.innerHTML = `
-                <div class="card-image-container" style="height: 200px; overflow: hidden; border-radius: 12px 12px 0 0;">
-                    <img src="${project.image}" alt="${project.name}" style="width: 100%; height: 100%; object-fit: cover;">
-                </div>
-                <div class="card-content" style="padding: 20px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span class="card-category" style="color: var(--secondary-color); font-size: 0.9rem; font-weight: 600;">FEATURED</span>
-                        <img src="${project.logo}" style="width: 25px; height: 25px; border-radius: 5px;">
-                    </div>
-                    <h3 style="margin-bottom: 10px; font-size: 1.25rem;">${project.title}</h3>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${project.description}</p>
-                    <a href="${project.liveLink}" target="_blank" class="card-link" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">
-                        View Project <i class="fas fa-arrow-right" style="margin-left: 5px;"></i>
-                    </a>
-                </div>
-            `;
-            // Insert at the beginning
-            if (portfolioScroll.firstChild) {
-                portfolioScroll.insertBefore(card, portfolioScroll.firstChild);
-            } else {
-                portfolioScroll.appendChild(card);
+    if (!projects || projects.length === 0) {
+        // Initialize with samples so it's not empty
+        projects = [
+            {
+                id: 1,
+                title: "E-commerce Platform",
+                description: "A full-stack e-commerce solution with user authentication, product management, and payment gateway integration.",
+                skills: ["React", "Node.js", "MongoDB", "Stripe"],
+                media: "https://images.unsplash.com/photo-1557821552-17105176677c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+                link: "#",
+                featured: true
+            },
+            {
+                id: 2,
+                title: "Task Management App",
+                description: "A productivity tool for teams to manage tasks, collaborate in real-time, and track project progress.",
+                skills: ["Vue.js", "Firebase", "Tailwind CSS"],
+                media: "https://images.unsplash.com/photo-1540350394557-8d14678e7f91?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+                link: "#"
+            },
+            {
+                id: 3,
+                title: "AI Image Generator",
+                description: "An AI-powered application that generates unique images from text descriptions using OpenAI's DALL-E API.",
+                skills: ["Python", "Flask", "OpenAI API", "React"],
+                media: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+                link: "#"
             }
-        });
+        ];
+        localStorage.setItem('projects', JSON.stringify(projects));
+    }
 
-        portfolioScroll.dataset.loaded = 'true';
+    // Filter: Show ONLY featured projects
+    const visibleProjects = projects.filter(p => p.featured);
+
+    grid.innerHTML = '';
+
+    if (visibleProjects.length === 0) {
+        grid.innerHTML = '<p style="text-align:center; color:var(--text-secondary); grid-column:1/-1;">No featured projects to display yet.</p>';
+        return;
+    }
+
+    visibleProjects.forEach((project, index) => {
+        const card = document.createElement('div');
+        card.className = 'portfolio-card-dynamic animate-on-scroll';
+        card.style.animationDelay = `${index * 0.1}s`;
+
+        const tagsHtml = (project.skills || []).slice(0, 3).map(skill =>
+            `<span class="project-tag">${skill}</span>`
+        ).join('');
+
+        card.innerHTML = `
+            <div class="project-image-container">
+                ${project.featured ? '<div style="position:absolute; top:10px; right:10px; background:#f59e0b; color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold; z-index:2; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Featured</div>' : ''}
+                <img src="${project.media}" alt="${project.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Project'">
+            </div>
+            <div class="project-content">
+                <h3 class="project-title">${project.title}</h3>
+                <div class="project-desc">
+                    ${(typeof marked !== 'undefined') ? marked.parse(project.description) : project.description || ''}
+                </div>
+                <div class="project-tags">
+                    ${tagsHtml}
+                </div>
+                <div class="project-links">
+                     <button onclick="openProjectDetails(${index})" class="project-link-btn" style="background:none; border:none; padding:0; cursor:pointer; font-family:inherit;">
+                        View Details <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+    // Re-trigger animation observer for new elements
+    if (typeof handleScrollAnimations === 'function') {
+        setTimeout(handleScrollAnimations, 100);
     }
 }
+// Admin Login Logic for Index Page
+const indexLoginOverlay = document.getElementById('indexLoginOverlay');
+
+function openIndexLogin() {
+    if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+        window.location.href = 'admin.html';
+    } else {
+        if (indexLoginOverlay) {
+            indexLoginOverlay.style.display = 'flex';
+            playClickSound();
+        }
+    }
+}
+
+function closeIndexLogin() {
+    if (indexLoginOverlay) indexLoginOverlay.style.display = 'none';
+}
+
+function checkIndexPassword() {
+    const password = document.getElementById('indexAdminPassword').value;
+    const errorMsg = document.getElementById('indexLoginError');
+
+    if (password === 'admin') {
+        sessionStorage.setItem('isAdminAuthenticated', 'true');
+        window.location.href = 'admin.html';
+    } else {
+        errorMsg.textContent = 'Incorrect password';
+        playClickSound();
+        const box = indexLoginOverlay.querySelector('.login-box');
+        if (box) {
+            box.style.animation = 'shake 0.5s';
+            setTimeout(() => box.style.animation = '', 500);
+        }
+    }
+}
+
+const pwdInput = document.getElementById('indexAdminPassword');
+if (pwdInput) {
+    pwdInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkIndexPassword();
+    });
+}
+
+if (indexLoginOverlay) {
+    indexLoginOverlay.addEventListener('click', (e) => {
+        if (e.target === indexLoginOverlay) closeIndexLogin();
+    });
+}
+
+// Expose to global
+window.openIndexLogin = openIndexLogin;
+window.closeIndexLogin = closeIndexLogin;
+window.checkIndexPassword = checkIndexPassword;
+
+// Project Details Modal Logic
+(function () {
+    const modal = document.getElementById('projectDetailsModal');
+    const img = document.getElementById('modalProjectImage');
+    const title = document.getElementById('modalProjectTitle');
+    const date = document.getElementById('modalProjectDate');
+    const tags = document.getElementById('modalProjectTags');
+    const desc = document.getElementById('modalProjectDesc');
+    const link = document.getElementById('modalProjectLink');
+
+    window.openProjectDetails = function (index) {
+        const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+        const visibleProjects = projects.filter(p => p.featured);
+
+        if (!visibleProjects[index]) return;
+
+        const p = visibleProjects[index];
+
+        if (img) img.src = p.media;
+        if (title) title.innerText = p.title;
+
+        // Date
+        let dateText = "Date not specified";
+        if (p.startDate && p.endDate) {
+            dateText = `${p.startDate.month} ${p.startDate.year} - ${p.endDate.month} ${p.endDate.year} `;
+        }
+        if (p.isWorkingOn) {
+            dateText = "Currently Working on this";
+        }
+        if (date) date.innerHTML = dateText;
+
+        // Tags
+        if (tags) {
+            tags.innerHTML = (p.skills || []).map(s =>
+                `<span class="project-modal-tag" style="background:rgba(44,95,93,0.1); color:var(--primary-color); padding:5px 12px; border-radius:20px; font-size:0.85rem; font-weight:600;"> ${s}</span> `
+            ).join('');
+        }
+
+        // Description
+        // Use marked to parse markdown if available, otherwise just text
+        if (desc) {
+            if (typeof marked !== 'undefined') {
+                desc.innerHTML = marked.parse(p.description || "No description available.");
+            } else {
+                desc.innerText = p.description || "No description available.";
+            }
+        }
+
+        // Link handling
+        if (link) {
+            let href = p.link || '#';
+            if (href !== '#' && !href.match(/^https?:\/\//i)) {
+                href = 'https://' + href;
+            }
+            link.href = href;
+            // Open in new tab if it's an external link
+            if (href !== '#') {
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+            }
+        }
+
+        // Show
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeProjectDetails = function () {
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
+        }
+    };
+
+    if (modal) {
+        modal.onclick = function (e) {
+            if (e.target === modal) window.closeProjectDetails();
+        }
+    }
+})();

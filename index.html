@@ -19,7 +19,7 @@
   <!-- Loading Screen -->
   <div class="loader" id="loader">
     <div class="loader-content">
-      <div class="loader-spinner"></div>
+      <img src="favicon.ico" alt="Loading..." class="loader-icon">
       <p class="loader-text">Loading Portfolio...</p>
     </div>
   </div>
@@ -43,6 +43,9 @@
       <button class="fab-option" onclick="shareProfile()" title="Share Profile">
         <i class="fas fa-share"></i>
       </button>
+      <button class="fab-option" onclick="openIndexLogin()" title="Admin Access">
+        <i class="fas fa-user-lock"></i>
+      </button>
     </div>
   </div>
 
@@ -57,11 +60,10 @@
     <div class="nav-links" id="navLinks">
       <a href="#home" class="nav-link active">Home</a>
       <a href="#services" class="nav-link">Services</a>
-      <a href="#portfolio" class="nav-link">Portfolio</a>
+      <a href="#portfolio" class="nav-link">Projects</a>
       <a href="#experience" class="nav-link">Experience</a>
       <a href="#skills" class="nav-link">Skills</a>
       <a href="#how-i-work" class="nav-link">How I Work</a>
-      <a href="projects.html" class="nav-link">Projects</a>
       <a href="#contact" class="nav-link">Contact</a>
     </div>
     <button class="nav-toggle" id="navToggle">
@@ -188,111 +190,17 @@
       </p>
     </div>
 
-    <div class="portfolio-container">
-      <div class="portfolio-scroll">
-        <div class="portfolio-card" style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);">
-          <div class="card-content">
-            <div class="card-header">
-              <h3>UX Design</h3>
-              <span class="card-category">Mobile App</span>
-            </div>
-            <div class="card-mockups">
-              <div class="mockup-phone">
-                <img
-                  src="public/Red and White Illustration Modern Creative Delivery Ramen Menu Order Mobile Prototype.png"
-                  alt="Mobile App Design" />
-              </div>
-              <div class="mockup-phone">
-                <img src="public/Yellow and Brown Geometric Prototype Mobile.png" alt="App Screen 2" />
-              </div>
-            </div>
-          </div>
-        </div>
+    <div id="portfolioGrid" class="portfolio-grid">
+      <!-- Projects will be loaded dynamically here -->
+      <p class="loading-text" style="color: var(--text-secondary);">Loading amazing projects...</p>
+    </div>
 
-        <div class="portfolio-card" style="background: linear-gradient(135deg, #2c5f5d 0%, #4a8b87 100%);">
-          <div class="card-content">
-            <div class="card-header">
-              <h3>Web Design</h3>
-              <span class="card-category">Agency Website</span>
-            </div>
-            <div class="card-mockups">
-              <div class="mockup-laptop">
-                <img src="public/Screenshot 2025-07-28 235720.png" alt="Website Design" />
-              </div>
-              <div class="mockup-tablet">
-                <img src="public/Screenshot 2025-07-28 235736.png" alt="Tablet View" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="portfolio-card" style="background: linear-gradient(135deg, #5fb3af 0%, #7dd3d8 100%);">
-          <div class="card-content">
-            <div class="card-header">
-              <h3>Brand Identity</h3>
-              <span class="card-category">E-commerce</span>
-            </div>
-            <div class="card-mockups">
-              <div class="mockup-phone">
-                <img src="public/Screenshot 2025-07-29 000112.png" alt="Brand Design" />
-              </div>
-              <div class="mockup-desktop">
-                <img src="public/Screenshot 2025-07-29 000020.png" alt="Desktop View" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="portfolio-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);">
-          <div class="card-content">
-            <div class="card-header">
-              <h3>Dashboard</h3>
-              <span class="card-category">SaaS Platform</span>
-            </div>
-            <div class="card-mockups">
-              <div class="mockup-laptop">
-                <img src="public/Screenshot 2025-07-29 000337.png" alt="Dashboard Design" />
-              </div>
-              <div class="mockup-phone">
-                <img src="public/Screenshot 2025-07-29 000413.png" alt="Mobile Dashboard" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="portfolio-card" style="background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);">
-          <div class="card-content">
-            <div class="card-header">
-              <h3>Landing Page</h3>
-              <span class="card-category">Startup</span>
-            </div>
-            <div class="card-mockups">
-              <div class="mockup-desktop">
-                <img src="public/Screenshot 2025-07-29 000650.png" alt="Landing Page" />
-              </div>
-              <div class="mockup-tablet">
-                <img src="public/Screenshot 2025-07-29 000706.png" alt="Responsive Design" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="scroll-indicators">
-        <button class="scroll-btn scroll-left" id="scrollLeft">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <button class="scroll-btn scroll-right" id="scrollRight">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-
-      <div style="text-align: center; margin-top: 40px;">
-        <a href="projects.html" class="btn btn-primary"
-          style="padding: 12px 30px; font-size: 1.1rem; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; box-shadow: var(--shadow-md);">
-          <i class="fas fa-th-large"></i> See All Projects
-        </a>
-      </div>
+    <div style="text-align: center; margin-top: 40px; display: none;">
+      <a href="projects.html" class="btn btn-primary"
+        style="padding: 12px 30px; font-size: 1.1rem; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; box-shadow: var(--shadow-md);">
+        <i class="fas fa-th-large"></i> See All Projects
+      </a>
+    </div>
     </div>
   </section>
 
@@ -603,10 +511,73 @@
     </div>
   </section>
 
+  <!-- Footer -->
+  <footer style="padding: 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: 50px;">
+    <p style="color: var(--text-secondary);">&copy; 2026 Anish. All rights reserved.</p>
+    <a href="admin.html" class="admin-footer-link">Admin Access</a>
+  </footer>
+
+
+  <!-- Project Details Modal -->
+  <div id="projectDetailsModal" class="project-modal-overlay" style="display: none;">
+    <div class="project-modal-content">
+      <button class="close-project-modal" onclick="closeProjectDetails()"><i class="fas fa-times"></i></button>
+
+      <div class="project-modal-image">
+        <img id="modalProjectImage" src="" alt="Project Image">
+      </div>
+
+      <div class="project-modal-body">
+        <div class="project-modal-header">
+          <h2 id="modalProjectTitle">Project Title</h2>
+          <span id="modalProjectStatus" class="status-badge"></span>
+        </div>
+
+        <div class="project-modal-meta">
+          <div class="meta-item">
+            <i class="far fa-calendar-alt"></i>
+            <span id="modalProjectDate">Jan 2024 - Present</span>
+          </div>
+        </div>
+
+        <div class="project-modal-tags" id="modalProjectTags">
+          <!-- Skills injected here -->
+        </div>
+
+        <div class="project-modal-desc">
+          <p id="modalProjectDesc">Description goes here...</p>
+        </div>
+
+        <div class="project-modal-footer">
+          <a id="modalProjectLink" href="#" target="_blank" class="btn btn-primary modal-action-btn">
+            Visit Live Site <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
+  <!-- Login Overlay for Admin Access -->
+  <div id="indexLoginOverlay" class="login-overlay"
+    style="display: none; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 10000;">
+    <div class="login-box"
+      style="background: var(--bg-secondary); padding: 2rem; border-radius: 12px; text-align: center; box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); width: 320px;">
+      <h2 style="margin-bottom: 1.5rem; color: var(--text-primary);">Admin Access</h2>
+      <input type="password" id="indexAdminPassword" placeholder="Enter Password"
+        style="width: 100%; padding: 12px; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button onclick="checkIndexPassword()" class="btn btn-primary" style="padding: 10px 20px;">Unlock</button>
+        <button onclick="closeIndexLogin()" class="btn btn-secondary"
+          style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);">Cancel</button>
+      </div>
+      <p id="indexLoginError" style="color: #ef4444; margin-top: 10px; font-size: 0.9rem;"></p>
+    </div>
+  </div>
 
   <script src="email.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="script.js"></script>
   <div id="viewCounter" class="view-counter-fab" style="opacity: 0; transition: opacity 0.5s ease;">
     <i class="fas fa-eye"></i>
