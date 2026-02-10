@@ -1,14 +1,22 @@
 {
     "version": 2,
-    "rewrites": [
+    "builds": [
         {
-            "source": "/",
-            "destination": "/index.html"
-        },
-        {
-            "source": "/admin",
-            "destination": "/admin.html"
+            "src": "*.html",
+            "use": "@vercel/static"
         }
     ],
-    "cleanUrls": true
+    "routes": [
+        {
+            "src": "/admin",
+            "dest": "/admin.html"
+        },
+        {
+            "src": "/",
+            "dest": "/index.html"
+        },
+        {
+            "handle": "filesystem"
+        }
+    ]
 }
