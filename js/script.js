@@ -491,49 +491,32 @@ if (document.readyState === 'loading') {
     }
 }
 
-// Load Projects from LocalStorage
-function loadProjects() {
+// Load Projects from localStorage (original static behavior)
+async function loadProjects() {
     const grid = document.getElementById('portfolioGrid');
     if (!grid) return;
 
-    // Load projects or initialize samples if empty
-    let projects = JSON.parse(localStorage.getItem('projects'));
+    grid.innerHTML = '<p class="loading-text" style="color: var(--text-secondary);">Loading amazing projects...</p>';
 
-    if (!projects || projects.length === 0) {
-        // Initialize with samples so it's not empty
-        projects = [
-            {
-                id: 1,
-                title: "E-commerce Platform",
-                description: "A full-stack e-commerce solution with user authentication, product management, and payment gateway integration.",
-                skills: ["React", "Node.js", "MongoDB", "Stripe"],
-                media: "https://images.unsplash.com/photo-1557821552-17105176677c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-                link: "#",
-                featured: true
-            },
-            {
-                id: 2,
-                title: "Task Management App",
-                description: "A productivity tool for teams to manage tasks, collaborate in real-time, and track project progress.",
-                skills: ["Vue.js", "Firebase", "Tailwind CSS"],
-                media: "https://images.unsplash.com/photo-1540350394557-8d14678e7f91?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-                link: "#"
-            },
-            {
-                id: 3,
-                title: "AI Image Generator",
-                description: "An AI-powered application that generates unique images from text descriptions using OpenAI's DALL-E API.",
-                skills: ["Python", "Flask", "OpenAI API", "React"],
-                media: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-                link: "#"
-            }
-        ];
-        localStorage.setItem('projects', JSON.stringify(projects));
+    let projects = [];
+
+    // 1. Try fetching from API
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/projects/manifest.json');
+        if (resp.ok) {
+            projects = await resp.json();
+            console.log('Loaded projects from API', projects);
+        }
+    } catch (e) {
+        console.warn('API load failed, falling back to storage', e);
     }
 
-    // Filter: Show ONLY featured projects
-    const visibleProjects = projects.filter(p => p.featured);
+    // 2. Fallback removed to prevent default/cached projects from showing up
+    if (!projects || projects.length === 0) {
+        console.warn('No projects found from API.');
+    }
 
+    const visibleProjects = (projects || []).filter(p => p.featured);
     grid.innerHTML = '';
 
     if (visibleProjects.length === 0) {
@@ -541,19 +524,29 @@ function loadProjects() {
         return;
     }
 
-    visibleProjects.forEach((project, index) => {
+    renderProjectCards(visibleProjects, grid);
+}
+
+// Helper to render project cards into the grid
+function renderProjectCards(projects, grid) {
+    projects.forEach((project, index) => {
         const card = document.createElement('div');
         card.className = 'portfolio-card-dynamic animate-on-scroll';
         card.style.animationDelay = `${index * 0.1}s`;
 
-        const tagsHtml = (project.skills || []).slice(0, 3).map(skill =>
+        const tagsHtml = (project.tags || []).slice(0, 3).map(skill =>
             `<span class="project-tag">${skill}</span>`
         ).join('');
+
+        let imgSrc = project.image || project.images?.[0]?.url || 'https://via.placeholder.com/400x250?text=Project';
+        if (imgSrc.startsWith('/') && window.API_BASE) {
+            imgSrc = window.API_BASE + imgSrc;
+        }
 
         card.innerHTML = `
             <div class="project-image-container">
                 ${project.featured ? '<div style="position:absolute; top:10px; right:10px; background:#f59e0b; color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold; z-index:2; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Featured</div>' : ''}
-                <img src="${project.media}" alt="${project.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Project'">
+                <img src="${imgSrc}" alt="${project.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Project'">
             </div>
             <div class="project-content">
                 <h3 class="project-title">${project.title}</h3>
@@ -564,7 +557,7 @@ function loadProjects() {
                     ${tagsHtml}
                 </div>
                 <div class="project-links">
-                     <button onclick="openProjectDetails(${index})" class="project-link-btn" style="background:none; border:none; padding:0; cursor:pointer; font-family:inherit;">
+                     <button onclick="openProjectDetails('${project.slug}')" class="project-link-btn" style="background:none; border:none; padding:0; cursor:pointer; font-family:inherit;">
                         View Details <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
@@ -572,11 +565,23 @@ function loadProjects() {
         `;
         grid.appendChild(card);
     });
+
     // Re-trigger animation observer for new elements
     if (typeof handleScrollAnimations === 'function') {
         setTimeout(handleScrollAnimations, 100);
     }
 }
+
+
+// Real-time updates via Socket.IO
+try {
+    if (typeof io !== 'undefined') {
+        const socket = io(window.API_BASE);
+        socket.on('projects:created', () => loadProjects());
+        socket.on('projects:updated', () => loadProjects());
+        socket.on('projects:deleted', () => loadProjects());
+    }
+} catch (e) { }
 // Admin Login Logic for Index Page
 const indexLoginOverlay = document.getElementById('indexLoginOverlay');
 
@@ -599,18 +604,28 @@ function checkIndexPassword() {
     const password = document.getElementById('indexAdminPassword').value;
     const errorMsg = document.getElementById('indexLoginError');
 
-    if (password === 'admin') {
-        sessionStorage.setItem('isAdminAuthenticated', 'true');
-        window.location.href = 'admin.html';
-    } else {
-        errorMsg.textContent = 'Incorrect password';
-        playClickSound();
-        const box = indexLoginOverlay.querySelector('.login-box');
-        if (box) {
-            box.style.animation = 'shake 0.5s';
-            setTimeout(() => box.style.animation = '', 500);
+    fetch((window.API_BASE) + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ password })
+    }).then(async (r) => {
+        if (r.ok) {
+            window.location.href = 'admin.html';
+        } else {
+            const data = await r.json().catch(() => ({}));
+            errorMsg.textContent = data.message || 'Incorrect password';
+            playClickSound();
+            const box = indexLoginOverlay.querySelector('.login-box');
+            if (box) {
+                box.style.animation = 'shake 0.5s';
+                setTimeout(() => box.style.animation = '', 500);
+            }
         }
-    }
+    }).catch(err => {
+        console.error(err);
+        errorMsg.textContent = 'Login failed';
+    });
 }
 
 const pwdInput = document.getElementById('indexAdminPassword');
@@ -641,64 +656,66 @@ window.checkIndexPassword = checkIndexPassword;
     const desc = document.getElementById('modalProjectDesc');
     const link = document.getElementById('modalProjectLink');
 
-    window.openProjectDetails = function (index) {
-        const projects = JSON.parse(localStorage.getItem('projects') || '[]');
-        const visibleProjects = projects.filter(p => p.featured);
+    window.openProjectDetails = async function (slug) {
+        try {
+            const resp = await fetch((window.API_BASE || '') + '/api/projects/manifest.json');
+            if (!resp.ok) return;
+            const manifest = await resp.json();
+            const p = (manifest || []).find(item => item.slug === slug);
+            if (!p) return;
 
-        if (!visibleProjects[index]) return;
+            if (img) img.src = p.image || (p.images && p.images[0] && p.images[0].url) || '';
+            if (title) title.innerText = p.title;
 
-        const p = visibleProjects[index];
-
-        if (img) img.src = p.media;
-        if (title) title.innerText = p.title;
-
-        // Date
-        let dateText = "Date not specified";
-        if (p.startDate && p.endDate) {
-            dateText = `${p.startDate.month} ${p.startDate.year} - ${p.endDate.month} ${p.endDate.year} `;
-        }
-        if (p.isWorkingOn) {
-            dateText = "Currently Working on this";
-        }
-        if (date) date.innerHTML = dateText;
-
-        // Tags
-        if (tags) {
-            tags.innerHTML = (p.skills || []).map(s =>
-                `<span class="project-modal-tag" style="background:rgba(44,95,93,0.1); color:var(--primary-color); padding:5px 12px; border-radius:20px; font-size:0.85rem; font-weight:600;"> ${s}</span> `
-            ).join('');
-        }
-
-        // Description
-        // Use marked to parse markdown if available, otherwise just text
-        if (desc) {
-            if (typeof marked !== 'undefined') {
-                desc.innerHTML = marked.parse(p.description || "No description available.");
-            } else {
-                desc.innerText = p.description || "No description available.";
+            // Date
+            let dateText = "Date not specified";
+            if (p.startDate && p.endDate) {
+                dateText = `${p.startDate.month} ${p.startDate.year} - ${p.endDate.month} ${p.endDate.year} `;
             }
-        }
-
-        // Link handling
-        if (link) {
-            let href = p.link || '#';
-            if (href !== '#' && !href.match(/^https?:\/\//i)) {
-                href = 'https://' + href;
+            if (p.isWorkingOn) {
+                dateText = "Currently Working on this";
             }
-            link.href = href;
-            // Open in new tab if it's an external link
-            if (href !== '#') {
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-            }
-        }
+            if (date) date.innerHTML = dateText;
 
-        // Show
-        if (modal) {
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('active'), 10);
+            // Tags
+            if (tags) {
+                tags.innerHTML = (p.tags || p.skills || []).map(s =>
+                    `<span class="project-modal-tag" style="background:rgba(44,95,93,0.1); color:var(--primary-color); padding:5px 12px; border-radius:20px; font-size:0.85rem; font-weight:600;"> ${s}</span> `
+                ).join('');
+            }
+
+            // Description
+            // Use marked to parse markdown if available, otherwise just text
+            if (desc) {
+                if (typeof marked !== 'undefined') {
+                    desc.innerHTML = marked.parse(p.description || "No description available.");
+                } else {
+                    desc.innerText = p.description || "No description available.";
+                }
+            }
+
+            // Link handling
+            if (link) {
+                let href = p.link || '#';
+                if (href !== '#' && !href.match(/^https?:\/\//i)) {
+                    href = 'https://' + href;
+                }
+                link.href = href;
+                if (href !== '#') {
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                }
+            }
+
+            // Show
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+            }
+            document.body.style.overflow = 'hidden';
+        } catch (e) {
+            console.error(e);
         }
-        document.body.style.overflow = 'hidden';
     };
 
     window.closeProjectDetails = function () {

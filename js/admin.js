@@ -1,8 +1,3 @@
-// Simple Auth
-const AUTH_KEY = 'isAdminAuthenticated';
-// Using a simple hardcoded password as requested ("simple")
-const ADMIN_PASSWORD = 'admin';
-
 // DOM Elements
 const adminDashboard = document.getElementById('adminDashboard');
 const projectModal = document.getElementById('projectModal'); // The generic modal container
@@ -12,7 +7,7 @@ const skillInput = document.getElementById('skillInput');
 const skillsTags = document.getElementById('skillsTags');
 
 // State
-let projects = JSON.parse(localStorage.getItem('projects')) || [];
+let projects = [];
 let currentSkills = [];
 
 // Initialize
@@ -24,11 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Auth Functions
 // Auth Functions
 function checkSession() {
-    if (sessionStorage.getItem(AUTH_KEY) !== 'true') {
-        window.location.href = 'index.html';
-    } else {
-        renderProjects();
-    }
+    // For simplicity allow admin page to load; actual protection happens server-side when making requests.
+    renderProjects();
 }
 
 function showDashboard() {
@@ -193,57 +185,80 @@ function saveProject() {
 
     // Validation
     const title = document.getElementById('projectName').value;
-    const media = document.getElementById('mediaBase64').value; // Use hidden base64 input
-
     if (!title) {
         alert('Project Name is required');
         return;
     }
 
-    const project = {
-        title,
-        description: document.getElementById('projectDesc').value,
-        skills: currentSkills,
-        media: media || 'public/project-placeholder.jpg', // Fallback
-        link: (() => {
-            let userLink = document.getElementById('projectLink').value;
-            if (userLink && !userLink.match(/^https?:\/\//i)) {
-                return 'https://' + userLink;
-            }
-            return userLink;
-        })(),
-        isWorkingOn: document.getElementById('workingOn').checked,
-        featured: document.getElementById('featuredProject').checked,
-        startDate: {
-            month: document.getElementById('startMonth').value,
-            year: document.getElementById('startYear').value
-        },
-        endDate: {
-            month: document.getElementById('endMonth').value,
-            year: document.getElementById('endYear').value
-        },
-        id: editIndex === -1 ? Date.now() : projects[editIndex].id
-    };
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', document.getElementById('projectDesc').value || '');
+    formData.append('featured', document.getElementById('featuredProject').checked ? 'true' : 'false');
+    formData.append('link', document.getElementById('projectLink').value || '');
+    formData.append('isWorkingOn', document.getElementById('workingOn').checked ? 'true' : 'false');
+    formData.append('startMonth', document.getElementById('startMonth').value || '');
+    formData.append('startYear', document.getElementById('startYear').value || '');
+    formData.append('endMonth', document.getElementById('endMonth').value || '');
+    formData.append('endYear', document.getElementById('endYear').value || '');
+    if (currentSkills.length) formData.append('skills', JSON.stringify(currentSkills));
 
-    if (editIndex === -1) {
-        projects.unshift(project); // Add to top
+    const fileInput = document.getElementById('mediaFile');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        formData.append('image', fileInput.files[0], fileInput.files[0].name);
     } else {
-        projects[editIndex] = project;
+        // If only base64 preview exists, send as imageBase64
+        const mediaBase64 = document.getElementById('mediaBase64').value;
+        if (mediaBase64) formData.append('imageBase64', mediaBase64);
     }
 
-    // Persist
-    localStorage.setItem('projects', JSON.stringify(projects));
+    let url = '/api/projects';
+    let method = 'POST';
 
-    closeModal();
-    renderProjects();
+    if (editIndex >= 0 && projects[editIndex]) {
+        const slug = projects[editIndex].slug;
+        if (slug) {
+            url = `/api/projects/${slug}`;
+            method = 'PUT';
+        }
+    }
+
+    fetch((window.API_BASE) + url, { method: method, body: formData, credentials: 'include' })
+        .then(r => r.json())
+        .then(res => {
+            if (res.ok) {
+                closeModal();
+                renderProjects();
+                const action = method === 'POST' ? 'created' : 'updated';
+                alert(`Project ${action} successfully`);
+            } else {
+                alert('Failed to save project: ' + (res.message || 'Server error'));
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('Failed to save project');
+        });
 }
 
 function deleteProject(index) {
-    if (confirm('Are you sure you want to delete this project?')) {
-        projects.splice(index, 1);
-        localStorage.setItem('projects', JSON.stringify(projects));
-        renderProjects();
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    const p = projects[index];
+    if (!p || !p.slug) {
+        alert('Invalid project');
+        return;
     }
+
+    fetch((window.API_BASE) + `/api/projects/${p.slug}`, { method: 'DELETE', credentials: 'include' })
+        .then(r => r.json())
+        .then(res => {
+            if (res.ok) {
+                renderProjects();
+            } else {
+                alert('Failed to delete project: ' + (res.message || 'Server error'));
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('Failed to delete project');
+        });
 }
 
 function editProject(index) {
@@ -254,11 +269,16 @@ function editProject(index) {
     document.getElementById('projectDesc').value = p.description;
 
     // Media preview
-    document.getElementById('mediaBase64').value = p.media || '';
+    const projectImage = p.image || (p.images && p.images[0] && p.images[0].url) || '';
+    document.getElementById('mediaBase64').value = projectImage;
     const previewImg = document.getElementById('previewImg');
     const mediaPreview = document.getElementById('mediaPreview');
-    if (p.media) {
-        previewImg.src = p.media;
+    if (projectImage) {
+        if (projectImage.startsWith('/') && window.API_BASE) {
+            previewImg.src = window.API_BASE + projectImage;
+        } else {
+            previewImg.src = projectImage;
+        }
         mediaPreview.style.display = 'flex';
     } else {
         previewImg.src = '';
@@ -279,28 +299,41 @@ function editProject(index) {
 
     document.getElementById('projectModal').style.display = 'flex';
 }
+async function renderProjects() {
+    projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Loading...</p>';
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/projects/manifest.json');
+        if (!resp.ok) throw new Error('Failed');
+        const data = await resp.json();
+        projects = data || [];
 
-function renderProjects() {
-    projectsList.innerHTML = '';
+        projectsList.innerHTML = '';
+        if (projects.length === 0) {
+            projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">No projects yet. Click "Add project" to start.</p>';
+            return;
+        }
 
-    if (projects.length === 0) {
-        projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">No projects yet. Click "Add project" to start.</p>';
-        return;
+        projects.forEach((p, index) => {
+            const card = document.createElement('div');
+            card.className = 'project-card-admin';
+            let thumb = p.image || (p.images && p.images[0] && p.images[0].url) || 'https://via.placeholder.com/300x200?text=No+Image';
+            if (thumb.startsWith('/') && window.API_BASE) {
+                thumb = window.API_BASE + thumb;
+            }
+            card.innerHTML = `
+                <img src="${thumb}" alt="${p.title}" class="project-thumb" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                <div class="project-actions">
+                    ${p.featured ? '<span style="background:#10b981; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-right:5px;">Visible</span>' : '<span style="background:#6b7280; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-right:5px;">Hidden</span>'}
+                    <button onclick="editProject(${index})" style="background:none; border:none; cursor:pointer; color:#3b82f6; margin:0 5px;" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button onclick="deleteProject(${index})" style="background:none; border:none; cursor:pointer; color:#ef4444; margin:0 5px;" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
+                <h3>${p.title}</h3>
+                <p>${(p.description || '').substring(0, 60)}...</p>
+            `;
+            projectsList.appendChild(card);
+        });
+    } catch (err) {
+        console.error(err);
+        projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Failed to load projects.</p>';
     }
-
-    projects.forEach((p, index) => {
-        const card = document.createElement('div');
-        card.className = 'project-card-admin';
-        card.innerHTML = `
-            <img src="${p.media}" alt="${p.title}" class="project-thumb" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
-            <div class="project-actions">
-                ${p.featured ? '<span style="background:#10b981; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-right:5px;">Visible</span>' : '<span style="background:#6b7280; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-right:5px;">Hidden</span>'}
-                <button onclick="editProject(${index})" class="action-btn"><i class="fas fa-edit"></i></button>
-                <button onclick="deleteProject(${index})" class="action-btn delete"><i class="fas fa-trash"></i></button>
-            </div>
-            <h3>${p.title}</h3>
-            <p>${p.description.substring(0, 60)}...</p>
-        `;
-        projectsList.appendChild(card);
-    });
 }
