@@ -190,7 +190,7 @@ function downloadCV() {
         showNotification('CV download started!');
         // Simulate CV download
         const link = document.createElement('a');
-        link.href = 'public/Document/Resume.pdf';
+        link.href = 'assets/Document/Resume.pdf';
         link.download = 'Anish_Resume.pdf';
         document.body.appendChild(link);
         link.click();
