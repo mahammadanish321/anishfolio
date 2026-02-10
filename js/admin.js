@@ -247,11 +247,15 @@ function deleteProject(index) {
         return;
     }
 
-    fetch((window.API_BASE) + `/api/projects/${p.slug}`, { method: 'DELETE', credentials: 'include' })
+    fetch((window.API_BASE) + `/api/projects/${p.slug}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    })
         .then(r => r.json())
         .then(res => {
-            if (res.ok) {
+            if (res.message === 'Project deleted successfully') { // Check for success message or status
                 renderProjects();
+                alert('Project deleted successfully');
             } else {
                 alert('Failed to delete project: ' + (res.message || 'Server error'));
             }
