@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="css/style.css"> <!-- Reusing main styles for fonts/reset -->
     <link rel="stylesheet" href="css/admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <script>
         // Apply saved theme immediately to prevent flash
         (function () {
@@ -39,24 +39,110 @@
         </header>
 
         <div class="container">
-            <!-- Project List -->
-            <div class="projects-list-section">
+            <!-- Tabs -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" onclick="switchTab('projects')">Projects</button>
+                <button class="tab-btn" onclick="switchTab('achievements')">Achievements</button>
+                <button class="tab-btn" onclick="switchTab('chatbot')">Chatbot</button>
+                <button class="tab-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</button>
+            </div>
+
+            <!-- Projects Section -->
+            <div id="tab-projects" class="tab-content active">
                 <div class="section-header">
                     <h2>Existing Projects</h2>
                     <button onclick="openAddModal()" class="btn-primary"><i class="fas fa-plus"></i> Add
                         project</button>
                 </div>
                 <div id="projectsList" class="projects-grid">
-                    <!-- Projects will be loaded here -->
+                    <!-- Projects loaded here -->
+                </div>
+            </div>
+
+            <!-- Achievements Section -->
+            <div id="tab-achievements" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Achievements</h2>
+                    <button onclick="openAddAchievementModal()" class="btn-primary"><i class="fas fa-plus"></i> Add
+                        Achievement</button>
+                </div>
+                <div id="achievementsList" class="projects-grid">
+                    <!-- Achievements loaded here -->
+                </div>
+            </div>
+
+            <!-- Chatbot Settings Section -->
+            <div id="tab-chatbot" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Chatbot Configuration</h2>
+                    <button onclick="saveChatbotSettings()" class="btn-primary"><i class="fas fa-save"></i> Save
+                        Settings</button>
+                </div>
+                <div class="chatbot-settings-form">
+                    <div class="form-group">
+                        <label>About Me (Context for AI)</label>
+                        <textarea id="botAboutMe" rows="6"
+                            placeholder="Describe yourself, skills, and background..."></textarea>
+                    </div>
+
+                    <h3 style="margin-top: 20px; margin-bottom: 10px;">FAQs</h3>
+                    <div id="botFaqs">
+                        <!-- FAQs injected here -->
+                    </div>
+                    <button onclick="addFaqItem()" class="btn-secondary" style="margin-top: 10px;"><i
+                            class="fas fa-plus"></i> Add FAQ</button>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="tab-settings" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Admin Settings</h2>
+                </div>
+
+                <div class="card"
+                    style="max-width: 500px; margin: 0 auto; padding: 2rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3
+                        style="margin-bottom: 20px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                        Change Password</h3>
+                    <form onsubmit="event.preventDefault(); changePassword();">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Update Password</button>
+                    </form>
+                </div>
+
+                <div class="card"
+                    style="max-width: 500px; margin: 30px auto 0; padding: 2rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3
+                        style="margin-bottom: 20px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                        Update Resume</h3>
+                    <form onsubmit="event.preventDefault(); handleResumeUpload();">
+                        <div class="form-group">
+                            <label>Upload PDF Resume</label>
+                            <input type="file" id="resumeInput" accept=".pdf" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Upload Resume</button>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <!-- Add/Edit Project Modal (LinkedIn Style) -->
+        <!-- Add/Edit Project Modal -->
         <div id="projectModal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Add project</h3>
+                    <h3>Add Project</h3>
                     <button onclick="closeModal()" class="close-btn"><i class="fas fa-times"></i></button>
                 </div>
 
@@ -67,7 +153,7 @@
                         <input type="hidden" id="editIndex" value="-1">
 
                         <div class="form-group">
-                            <label for="projectName">Project name*</label>
+                            <label for="projectName">Project Name*</label>
                             <input type="text" id="projectName" required placeholder="Ex: E-commerce Platform">
                         </div>
 
@@ -80,7 +166,7 @@
 
                         <div class="form-group">
                             <label>Skills</label>
-                            <p class="helper-text">We recommend adding your top 5 skills used in this project.</p>
+                            <p class="helper-text">Add your top skills used in this project.</p>
                             <div class="skills-input-container">
                                 <input type="text" id="skillInput" placeholder="Add a skill (Press Enter)">
                                 <button type="button" onclick="addSkill()" class="add-skill-btn"><i
@@ -92,40 +178,41 @@
                         <div class="form-group">
                             <label>Media</label>
                             <p class="helper-text">Upload an image to showcase your work.</p>
-                            <!-- File Input -->
                             <input type="file" id="mediaFile" accept="image/*" onchange="handleImageUpload(this)">
-                            <!-- Hidden input to store Base64 string -->
                             <input type="hidden" id="mediaBase64">
-                            <!-- Preview -->
                             <div id="mediaPreview"
-                                style="margin-top: 10px; width: 100%; height: 200px; background: #333; display: none; align-items: center; justify-content: center; overflow: hidden; border-radius: 4px;">
+                                style="margin-top: 10px; width: 100%; height: 200px; background: var(--bg-accent); display: none; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px;">
                                 <img id="previewImg" src="" alt="Preview"
                                     style="max-width: 100%; max-height: 100%; object-fit: contain;">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label>Additional details</label>
+                            <label>Additional Details</label>
                             <div class="checkbox-group">
-                                <input type="checkbox" id="workingOn">
-                                <label for="workingOn">I am currently working on this project</label>
+                                <label for="workingOn">
+                                    <input type="checkbox" id="workingOn">
+                                    I am currently working on this project
+                                </label>
                             </div>
                             <div class="checkbox-group" style="margin-top: 10px;">
-                                <input type="checkbox" id="featuredProject">
-                                <label for="featuredProject">Feature this project on main website</label>
+                                <label for="featuredProject">
+                                    <input type="checkbox" id="featuredProject">
+                                    Feature this project on main website
+                                </label>
                             </div>
                         </div>
 
                         <div class="date-row">
                             <div class="form-group half">
-                                <label>Start date</label>
+                                <label>Start Date</label>
                                 <div class="date-inputs">
                                     <select id="startMonth"></select>
                                     <select id="startYear"></select>
                                 </div>
                             </div>
                             <div class="form-group half">
-                                <label>End date</label>
+                                <label>End Date</label>
                                 <div class="date-inputs">
                                     <select id="endMonth"></select>
                                     <select id="endYear"></select>
@@ -135,27 +222,58 @@
 
                         <div class="form-group">
                             <label for="projectLink">Project Link (Live Demo or Repo)</label>
-                            <input type="url" id="projectLink" placeholder="https://github.com/...">
+                            <input type="url" id="projectLink" placeholder="https://...">
                         </div>
-
                     </form>
                 </div>
 
                 <div class="modal-footer">
-                    <button onclick="saveProject()" class="btn-save">Save</button>
+                    <button onclick="saveProject()" class="btn-save">Save Project</button>
                 </div>
             </div>
         </div>
 
-    </div>
+        <!-- Add/Edit Achievement Modal -->
+        <div id="achievementModal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Achievement</h3>
+                    <button onclick="closeAchievementModal()" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="achievementForm">
+                        <input type="hidden" id="achEditId" value="">
+                        <div class="form-group">
+                            <label>Title*</label>
+                            <input type="text" id="achTitle" required placeholder="Achievement Title">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="achDesc" rows="3" placeholder="Description..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="achDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Image</label>
+                            <input type="file" id="achImage" accept="image/*">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="saveAchievement()" class="btn-save">Save Achievement</button>
+                </div>
+            </div>
+        </div>
 
-    <script>
-        // API Configuration
-        // For local dev: 'http://localhost:5000'
-        // For production: 'https://anishfolio-server.onrender.com'
-        window.API_BASE = 'https://anishfolio-backend-1.onrender.com';
-    </script>
-    <script src="js/admin.js"></script>
+        <script>
+            // API Configuration
+            // For local dev: 'http://localhost:5000'
+            // For production: 'https://anishfolio-server.onrender.com'
+            window.API_BASE = 'http://localhost:5000';
+        </script>
+        <script src="js/admin.js"></script>
 </body>
 
 </html>

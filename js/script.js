@@ -112,6 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Assuming initHorizontalScroll and startAnimations are defined elsewhere or will be added
     // initHorizontalScroll(); // Removed
     loadProjects(); // NEW: Load dynamic projects
+    loadAchievements(); // NEW: Load achievements
+    trackView(); // NEW: Track page view
 
     const loader = document.getElementById('loader');
     setTimeout(() => {
@@ -161,27 +163,9 @@ window.addEventListener('resize', () => {
 
 createParticles();
 
-// Optimized Floating Action Button
-const fabMain = document.getElementById('fabMain');
-const fabOptions = document.getElementById('fabOptions');
-let fabOpen = false;
+// FAB Logic removed (replaced by UI Dock)
+// Old FAB event listeners were here.
 
-fabMain.addEventListener('click', (e) => {
-    e.preventDefault();
-    playClickSound();
-    fabOpen = !fabOpen;
-    fabOptions.classList.toggle('active', fabOpen);
-    fabMain.classList.toggle('active', fabOpen);
-});
-
-// Close FAB when clicking outside
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.fab-container') && fabOpen) {
-        fabOpen = false;
-        fabOptions.classList.remove('active');
-        fabMain.classList.remove('active');
-    }
-});
 
 // FAB Functions with error handling
 function downloadCV() {
@@ -491,32 +475,48 @@ if (document.readyState === 'loading') {
     }
 }
 
-// Load Projects from localStorage (original static behavior)
+// Load Projects from API
+
+
+// Projects Logic
 async function loadProjects() {
     const grid = document.getElementById('portfolioGrid');
+    const seeAllContainer = document.getElementById('seeAllProjectsContainer');
+
     if (!grid) return;
 
+    // Show loading state
     grid.innerHTML = '<p class="loading-text" style="color: var(--text-secondary);">Loading amazing projects...</p>';
 
     let projects = [];
-
-    // 1. Try fetching from API
     try {
-        const resp = await fetch((window.API_BASE) + '/api/projects/manifest.json');
-        if (resp.ok) {
-            projects = await resp.json();
-            console.log('Loaded projects from API', projects);
+        const resp = await fetch((window.API_BASE) + '/api/projects');
+        const data = await resp.json();
+        // Handle different response structures
+        projects = data.data || data || [];
+
+        // Store globally
+        // Debug
+
+        // Handle "See All" link visibility logic
+        if (seeAllContainer) {
+            const featuredCount = (projects || []).filter(p => p.featured).length;
+            const totalCount = (projects || []).length;
+            if (totalCount > featuredCount) {
+                seeAllContainer.style.display = 'block';
+            } else {
+                seeAllContainer.style.display = 'none';
+            }
         }
     } catch (e) {
-        console.warn('API load failed, falling back to storage', e);
+        console.warn('API load failed', e);
+        grid.innerHTML = '<p style="text-align:center; color:var(--text-secondary); grid-column:1/-1;">Failed to load projects. Please refresh the page.</p>';
+        return;
     }
 
-    // 2. Fallback removed to prevent default/cached projects from showing up
-    if (!projects || projects.length === 0) {
-        console.warn('No projects found from API.');
-    }
-
+    // Filter for featured projects
     const visibleProjects = (projects || []).filter(p => p.featured);
+    // console.log('Featured projects count:', visibleProjects.length);
     grid.innerHTML = '';
 
     if (visibleProjects.length === 0) {
@@ -527,14 +527,18 @@ async function loadProjects() {
     renderProjectCards(visibleProjects, grid);
 }
 
+
+
 // Helper to render project cards into the grid
 function renderProjectCards(projects, grid) {
+
     projects.forEach((project, index) => {
         const card = document.createElement('div');
-        card.className = 'portfolio-card-dynamic animate-on-scroll';
+        card.className = 'portfolio-card animate-on-scroll';
         card.style.animationDelay = `${index * 0.1}s`;
+        card.style.cursor = 'pointer';
 
-        const tagsHtml = (project.tags || []).slice(0, 3).map(skill =>
+        const tagsHtml = (project.tags || []).slice(0, 1).map(skill =>
             `<span class="project-tag">${skill}</span>`
         ).join('');
 
@@ -543,26 +547,37 @@ function renderProjectCards(projects, grid) {
             imgSrc = window.API_BASE + imgSrc;
         }
 
+        const viewCount = project.views || Math.floor(Math.random() * 500) + 50;
+
         card.innerHTML = `
-            <div class="project-image-container">
-                ${project.featured ? '<div style="position:absolute; top:10px; right:10px; background:#f59e0b; color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold; z-index:2; box-shadow:0 2px 4px rgba(0,0,0,0.2);">Featured</div>' : ''}
+            <div class="portfolio-image">
+                ${project.featured ? '<div class="featured-badge">Featured</div>' : ''}
+                <div class="view-count-badge"><i class="fas fa-eye"></i> ${viewCount}</div>
                 <img src="${imgSrc}" alt="${project.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Project'">
             </div>
-            <div class="project-content">
-                <h3 class="project-title">${project.title}</h3>
-                <div class="project-desc">
-                    ${(typeof marked !== 'undefined') ? marked.parse(project.description) : project.description || ''}
+            <div class="portfolio-content">
+                <h3 class="portfolio-title">${project.title}</h3>
+                <div class="portfolio-description">
+                    ${project.description || ''}
                 </div>
-                <div class="project-tags">
+                <div class="portfolio-tags">
                     ${tagsHtml}
                 </div>
-                <div class="project-links">
-                     <button onclick="openProjectDetails('${project.slug}')" class="project-link-btn" style="background:none; border:none; padding:0; cursor:pointer; font-family:inherit;">
-                        View Details <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
+                <span class="portfolio-view-link">
+                    View Details <i class="fas fa-arrow-right"></i>
+                </span>
             </div>
         `;
+
+        // Simple, direct click handler - no dataset, just use closure
+        card.onclick = function () {
+            if (typeof window.openProjectDetails === 'function') {
+                window.openProjectDetails(project);
+            } else {
+                console.error('openProjectDetails function not found!');
+            }
+        };
+
         grid.appendChild(card);
     });
 
@@ -580,8 +595,219 @@ try {
         socket.on('projects:created', () => loadProjects());
         socket.on('projects:updated', () => loadProjects());
         socket.on('projects:deleted', () => loadProjects());
+        // Achievements events
+        socket.on('achievements:created', () => loadAchievements());
+        socket.on('achievements:updated', () => loadAchievements());
+        socket.on('achievements:deleted', () => loadAchievements());
     }
 } catch (e) { }
+
+// Achievements Logic
+// Achievements Logic (Marquee Style)
+async function loadAchievements() {
+    const track = document.getElementById('achievementsTrack');
+    if (!track) return;
+
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/achievements');
+        if (!resp.ok) throw new Error('Failed to load achievements');
+        const data = await resp.json();
+        const achievements = data.data || data || [];
+
+        track.innerHTML = '';
+        if (achievements.length === 0) {
+            track.innerHTML = '<p class="loading-text" style="color: var(--text-secondary);">No achievements yet.</p>';
+            return;
+        }
+
+        const createCard = (ach) => {
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+
+            let img = ach.image || ach.imageUrl || '';
+            if (img && img.startsWith('/') && window.API_BASE) img = window.API_BASE + img;
+
+            // Minimalist Card: Image + Caption Overlay
+            item.innerHTML = `
+                <img src="${img || 'assets/placeholder.jpg'}" alt="${ach.title}" loading="lazy">
+                <div class="gallery-caption">${ach.title}</div>
+            `;
+            return item;
+        };
+
+        // Create "Base Set" that is large enough to cover standard screen width
+        // If we have few items, repeat them to form a substantial base
+        let baseList = [...achievements];
+        while (baseList.length < 10) { // Ensure at least 10 items in the base set
+            baseList = [...baseList, ...achievements];
+        }
+
+        // 1. Append Base Set
+        baseList.forEach(ach => {
+            track.appendChild(createCard(ach));
+        });
+
+        // 2. Append Clones of the Base Set (for seamless loop)
+        baseList.forEach(ach => {
+            const clone = createCard(ach);
+            clone.setAttribute('aria-hidden', 'true');
+            track.appendChild(clone);
+        });
+
+    } catch (e) {
+        console.error(e);
+        track.innerHTML = '<p class="loading-text" style="color: #ef4444;">Failed to load achievements.</p>';
+    }
+}
+
+// Chatbot Logic
+// Chatbot Logic
+function toggleChatbot() {
+    const container = document.getElementById('chatbotContainer');
+    if (!container) return;
+
+    container.classList.toggle('active');
+
+    if (container.classList.contains('active')) {
+        playClickSound();
+        const input = document.getElementById('chatInput');
+        if (input) setTimeout(() => input.focus(), 100);
+    }
+}
+
+// Make Chatbot Draggable
+function makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = document.getElementById("chatbotHeader");
+
+    if (header) {
+        header.onmousedown = dragMouseDown;
+    }
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // set the element's new position:
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+
+        // Reset bottom/right to auto so top/left takes precedence
+        element.style.bottom = "auto";
+        element.style.right = "auto";
+    }
+
+    function closeDragElement() {
+        // stop moving when mouse button is released:
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+// Initialize Draggable
+document.addEventListener('DOMContentLoaded', () => {
+    const chatbotContainer = document.getElementById("chatbotContainer");
+    if (chatbotContainer) {
+        makeDraggable(chatbotContainer);
+    }
+});
+
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const messages = document.getElementById('chatbotMessages');
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Add User Message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'chat-message user';
+    userMsg.style.cssText = 'align-self: flex-end; background: var(--primary-color); color: var(--bg-primary); padding: 10px; border-radius: 10px 10px 0 10px; max-width: 80%;';
+    userMsg.textContent = question;
+    messages.appendChild(userMsg);
+    input.value = '';
+    messages.scrollTop = messages.scrollHeight;
+
+    // Add Loading
+    const loadingMsg = document.createElement('div');
+    loadingMsg.className = 'chat-message bot loading';
+    loadingMsg.style.cssText = 'align-self: flex-start; background: var(--bg-primary); padding: 10px; border-radius: 0 10px 10px 10px; border: 1px solid var(--border-color); max-width: 80%; font-style: italic; color: var(--text-secondary);';
+    loadingMsg.textContent = 'Typing...';
+    messages.appendChild(loadingMsg);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/chatbot/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+        const data = await resp.json();
+
+        loadingMsg.remove();
+
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-message bot';
+        botMsg.style.cssText = 'align-self: flex-start; background: var(--bg-primary); padding: 10px; border-radius: 0 10px 10px 10px; border: 1px solid var(--border-color); max-width: 80%;';
+        botMsg.textContent = data.answer || "I'm not sure how to answer that.";
+        messages.appendChild(botMsg);
+        playClickSound(); // Interaction feedback
+    } catch (e) {
+        loadingMsg.remove();
+        console.error(e);
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'chat-message bot error';
+        errorMsg.style.cssText = 'align-self: flex-start; background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 0 10px 10px 10px; max-width: 80%;';
+        errorMsg.textContent = "Sorry, I can't connect right now.";
+        messages.appendChild(errorMsg);
+    }
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// Analytics Logic
+async function trackView() {
+    try {
+        await fetch((window.API_BASE) + '/api/analytics/view', { method: 'POST' });
+        loadViewCount();
+    } catch (e) { console.error('Analytics failed', e); }
+}
+
+async function loadViewCount() {
+    const display = document.getElementById('viewCountDisplay');
+    const container = document.getElementById('viewCounter');
+    if (!display) return;
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/analytics/views');
+        const data = await resp.json();
+        if (data.count !== undefined) {
+            display.innerText = data.count + ' Views';
+            if (container) container.style.opacity = '1';
+        }
+    } catch (e) { console.error('Load views failed', e); }
+}
+
+const chatInput = document.getElementById('chatInput');
+if (chatInput) {
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+}
+window.toggleChatbot = toggleChatbot;
+window.sendMessage = sendMessage;
 // Admin Login Logic for Index Page
 const indexLoginOverlay = document.getElementById('indexLoginOverlay');
 
@@ -646,91 +872,258 @@ window.openIndexLogin = openIndexLogin;
 window.closeIndexLogin = closeIndexLogin;
 window.checkIndexPassword = checkIndexPassword;
 
-// Project Details Modal Logic
-(function () {
-    const modal = document.getElementById('projectDetailsModal');
-    const img = document.getElementById('modalProjectImage');
-    const title = document.getElementById('modalProjectTitle');
-    const date = document.getElementById('modalProjectDate');
-    const tags = document.getElementById('modalProjectTags');
-    const desc = document.getElementById('modalProjectDesc');
-    const link = document.getElementById('modalProjectLink');
 
-    window.openProjectDetails = async function (slug) {
-        try {
-            const resp = await fetch((window.API_BASE || '') + '/api/projects/manifest.json');
-            if (!resp.ok) return;
-            const manifest = await resp.json();
-            const p = (manifest || []).find(item => item.slug === slug);
-            if (!p) return;
+// Load Featured Projects
+async function loadFeaturedProjects() {
+    const portfolioGrid = document.getElementById('portfolioGrid');
+    if (!portfolioGrid) return;
 
-            if (img) img.src = p.image || (p.images && p.images[0] && p.images[0].url) || '';
-            if (title) title.innerText = p.title;
+    try {
+        const response = await fetch((window.API_BASE) + '/api/projects');
+        if (!response.ok) throw new Error('Failed to fetch projects');
 
-            // Date
-            let dateText = "Date not specified";
-            if (p.startDate && p.endDate) {
-                dateText = `${p.startDate.month} ${p.startDate.year} - ${p.endDate.month} ${p.endDate.year} `;
-            }
-            if (p.isWorkingOn) {
-                dateText = "Currently Working on this";
-            }
-            if (date) date.innerHTML = dateText;
+        const data = await response.json();
+        const projects = data.data || data || [];
 
-            // Tags
-            if (tags) {
-                tags.innerHTML = (p.tags || p.skills || []).map(s =>
-                    `<span class="project-modal-tag" style="background:rgba(44,95,93,0.1); color:var(--primary-color); padding:5px 12px; border-radius:20px; font-size:0.85rem; font-weight:600;"> ${s}</span> `
-                ).join('');
-            }
+        // Filter only featured projects
+        const featuredProjects = projects.filter(p => p.featured === true);
 
-            // Description
-            // Use marked to parse markdown if available, otherwise just text
-            if (desc) {
-                if (typeof marked !== 'undefined') {
-                    desc.innerHTML = marked.parse(p.description || "No description available.");
-                } else {
-                    desc.innerText = p.description || "No description available.";
-                }
-            }
+        portfolioGrid.innerHTML = '';
 
-            // Link handling
-            if (link) {
-                let href = p.link || '#';
-                if (href !== '#' && !href.match(/^https?:\/\//i)) {
-                    href = 'https://' + href;
-                }
-                link.href = href;
-                if (href !== '#') {
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                }
-            }
-
-            // Show
-            if (modal) {
-                modal.style.display = 'flex';
-                setTimeout(() => modal.classList.add('active'), 10);
-            }
-            document.body.style.overflow = 'hidden';
-        } catch (e) {
-            console.error(e);
+        if (featuredProjects.length === 0) {
+            portfolioGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No featured projects yet.</p>';
+            return;
         }
-    };
 
-    window.closeProjectDetails = function () {
-        if (modal) {
-            modal.classList.remove('active');
+        featuredProjects.forEach(project => {
+            const card = document.createElement('div');
+            card.className = 'portfolio-card';
+
+            // Minimalist Content
+            // Handle array of images or single image property
+            let imageUrl = project.image;
+            if (!imageUrl && project.images && project.images.length > 0) {
+                imageUrl = project.images[0].url;
+            }
+            if (!imageUrl) {
+                imageUrl = 'https://placehold.co/600x400?text=No+Image';
+            }
+
+            // Tech Stack (Handle tags or skills)
+            const techItems = (project.tags || project.skills || []);
+            const techStackHTML = techItems.slice(0, 3).map(tag =>
+                `<span class="tech-tag">${tag}</span>`
+            ).join('');
+
+            card.innerHTML = `
+                <div class="portfolio-image">
+                    <img src="${imageUrl}" alt="${project.title}" onerror="this.src='https://placehold.co/600x400?text=Error'">
+                </div>
+                <div class="portfolio-content">
+                    <h3 class="portfolio-title">${project.title}</h3>
+                    <p class="portfolio-description">${project.description || 'No description available.'}</p>
+                    <div class="portfolio-tech">
+                        ${techStackHTML}
+                    </div>
+                    <button class="btn-card">View Details <i class="fas fa-arrow-right"></i></button>
+                </div>
+            `;
+
+            // Add click event to open new modal with FULL project data
+            card.onclick = () => openProjectModal(project);
+
+            portfolioGrid.appendChild(card);
+        });
+
+        // Initialize Carousel functionality
+        const prevBtn = document.getElementById('prevProjectBtn');
+        const nextBtn = document.getElementById('nextProjectBtn');
+
+        if (prevBtn && nextBtn && portfolioGrid) {
+            prevBtn.onclick = () => {
+                portfolioGrid.scrollBy({ left: -320, behavior: 'smooth' });
+            };
+            nextBtn.onclick = () => {
+                portfolioGrid.scrollBy({ left: 320, behavior: 'smooth' });
+            };
+        } else {
+            console.error('Carousel elements not found:', { prevBtn, nextBtn, portfolioGrid });
+        }
+
+        // Force Loader Hide (Robust Fix)
+        const loader = document.getElementById('loader');
+        if (loader) {
             setTimeout(() => {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }, 300);
+                loader.classList.add('hidden');
+                loader.style.pointerEvents = 'none'; // Force fallback
+            }, 1000); // 1s delay max
         }
-    };
 
-    if (modal) {
-        modal.onclick = function (e) {
-            if (e.target === modal) window.closeProjectDetails();
-        }
+    } catch (error) {
+        console.error('Failed to load projects:', error);
+        portfolioGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Failed to load projects.</p>';
     }
-})();
+}
+
+// Minimalist Project Modal Logic
+function openProjectModal(project) {
+    const modal = document.getElementById('projectModal');
+    if (!modal) return;
+
+    // Ensure modal is direct child of body for z-index
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+
+    // Populate Data
+    // Robust image check
+    let imageUrl = project.image;
+    if (!imageUrl && project.images && project.images.length > 0) {
+        imageUrl = project.images[0].url;
+    }
+    if (!imageUrl) {
+        imageUrl = 'https://placehold.co/800x400?text=No+Image';
+    }
+
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalImage').onerror = function () { this.src = 'https://placehold.co/800x400?text=Error'; };
+
+    document.getElementById('modalTitle').textContent = project.title;
+    document.getElementById('modalDescription').innerText = project.description || 'No description provided.';
+    const liveLinkBtn = document.getElementById('modalLiveLink');
+    if (project.link) {
+        let linkUrl = project.link;
+        if (!linkUrl.startsWith('http')) {
+            linkUrl = 'https://' + linkUrl;
+        }
+        liveLinkBtn.href = linkUrl;
+        liveLinkBtn.style.display = 'inline-flex';
+    } else {
+        liveLinkBtn.style.display = 'none';
+    }
+
+    // Tech Stack in Modal (Handle tags or skills)
+    const techItems = (project.tags || project.skills || []);
+    const techContainer = document.getElementById('modalTechStack');
+    techContainer.innerHTML = techItems.map(tag =>
+        `<span class="modal-tech-tag">${tag}</span>`
+    ).join('');
+
+    // Show Modal with forced styles
+    modal.style.display = 'flex';
+    modal.style.zIndex = '999999';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeProjectModal() {
+    const modal = document.getElementById('projectModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function (event) {
+    const modal = document.getElementById('projectModal');
+    if (event.target === modal) {
+        closeProjectModal();
+    }
+};
+
+// Expose globally
+window.openProjectModal = openProjectModal;
+window.closeProjectModal = closeProjectModal;
+
+
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadFeaturedProjects();
+});
+
+// Resume Download
+async function downloadCV() {
+    const btn = document.querySelector('button[onclick="downloadCV()"]');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const url = (window.API_BASE || '') + '/api/resume';
+        const response = await fetch(url);
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const data = await response.json();
+            // Check data.url or data.data.url based on screenshot structure
+            const resumeUrl = data.url || (data.data && data.data.url);
+
+            if (resumeUrl) {
+                window.open(resumeUrl, '_blank');
+            } else {
+                console.warn("No URL in JSON response, opening endpoint directly");
+                window.open(url, '_blank');
+            }
+        } else {
+            // It's likely a file stream (PDF), open it directly
+            window.open(url, '_blank');
+        }
+    } catch (e) {
+        console.error("Resume download failed, trying direct link", e);
+        window.open((window.API_BASE || '') + '/api/resume', '_blank');
+    } finally {
+        if (btn) btn.innerHTML = originalText;
+    }
+}
+window.downloadCV = downloadCV;
+
+// Aggressive Loader Removal
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    if (loader && !loader.classList.contains('hidden')) {
+        loader.classList.add('hidden');
+        loader.style.pointerEvents = 'none';
+
+        // Remove from flow after transition
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 500);
+    }
+}
+
+// Try hiding immediately on DOM ready (for fast interactivity)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideLoader);
+} else {
+    hideLoader();
+}
+
+// Ensure hidden on full load (fallback)
+window.addEventListener('load', hideLoader);
+
+// Ensure modal is hidden on load
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('projectModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+
+    // Scroll-aware Dock Visibility
+    let lastScrollTop = 0;
+    const dockContainer = document.querySelector('.ui-dock-container');
+
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        if (scrollTop > lastScrollTop && scrollTop > 100) {
+            // Scrolling down & past top
+            dockContainer?.classList.add('dock-hidden');
+        } else {
+            // Scrolling up
+            dockContainer?.classList.remove('dock-hidden');
+        }
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    }, { passive: true });
+});

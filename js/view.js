@@ -1,8 +1,12 @@
 export const view = async () => {
     const counterDisplay = document.getElementById('viewCountDisplay');
-    const counterContainer = document.getElementById('viewCounter');
+    // Note: ID changed from viewCounter to viewCountDock in index.html
+    const counterContainer = document.getElementById('viewCountDock') || document.getElementById('viewCounter');
 
-    if (!counterDisplay || !counterContainer) return;
+    if (!counterDisplay || !counterContainer) {
+        console.error('View Counter Debug: Elements not found');
+        return;
+    }
 
     const VIEW_KEY = 'portfolio_viewed_session';
     const isFirstVisit = !sessionStorage.getItem(VIEW_KEY);
@@ -12,23 +16,24 @@ export const view = async () => {
 
         if (isFirstVisit) {
             // First visit in this session: Increment view count
-            const response = await fetch((window.API_BASE) + '/api/views/hit', { method: 'POST' });
+            // Endpoint: POST /api/analytics/view
+            const response = await fetch((window.API_BASE) + '/api/analytics/view', { method: 'POST' });
             if (response.ok) {
                 const data = await response.json();
-                count = data.count;
+                count = data.count || data.views || data.totalViews || data.visits;
                 sessionStorage.setItem(VIEW_KEY, 'true');
             }
         } else {
             // Subsequent visits: Try to get current count without incrementing
-            // We optimize by trying a GET request first, if that fails we rely on socket
             try {
-                const response = await fetch((window.API_BASE) + '/api/views');
+                // Endpoint: GET /api/analytics/views
+                const response = await fetch((window.API_BASE) + '/api/analytics/views');
                 if (response.ok) {
                     const data = await response.json();
-                    count = data.count;
+                    count = data.count || data.views || data.totalViews || data.visits;
                 }
-            } catch (ignore) {
-                // Endpoint might not exist, will wait for socket
+            } catch (err) {
+                console.warn('View fetch failed', err);
             }
         }
 
@@ -41,7 +46,7 @@ export const view = async () => {
         }
 
     } catch (error) {
-        console.warn('View counter failed to load:', error);
+        console.error('View Counter Debug: Main Error', error);
         counterDisplay.innerText = '...';
         counterContainer.style.opacity = '1';
     }
@@ -50,14 +55,25 @@ export const view = async () => {
     try {
         if (typeof io !== 'undefined') {
             const socket = io(window.API_BASE);
+
+            socket.on('connect', () => {
+                // Connected
+            });
+
+            socket.on('connect_error', (err) => {
+                console.error('View Counter Debug: Socket Connection Error', err);
+            });
+
             socket.on('views:updated', (payload) => {
                 if (payload && typeof payload.count !== 'undefined') {
                     counterDisplay.innerText = payload.count;
                     counterContainer.style.opacity = '1';
                 }
             });
+        } else {
+            console.warn('View Counter Debug: Socket.IO not loaded');
         }
     } catch (e) {
-        // ignore socket errors
+        console.error('View Counter Debug: Socket Error', e);
     }
 };

@@ -10,24 +10,85 @@ const skillsTags = document.getElementById('skillsTags');
 let projects = [];
 let currentSkills = [];
 
+const achModal = document.getElementById('achievementModal');
+let achievements = [];
+let currentChatbotContext = {};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     populateDateDropdowns();
+
+    // Default tab
+    switchTab('projects');
+
+    // Character counter for description
+    const projectDesc = document.getElementById('projectDesc');
+    const descCount = document.getElementById('descCount');
+    if (projectDesc && descCount) {
+        projectDesc.addEventListener('input', () => {
+            descCount.textContent = projectDesc.value.length;
+        });
+    }
 });
 
+// Tab Switching
+function switchTab(tabName) {
+    // Buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // Content
+    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+
+    // Load data if needed
+    if (tabName === 'projects') renderProjects();
+    if (tabName === 'achievements') loadAchievements();
+    if (tabName === 'chatbot') loadChatbotSettings();
+    // Settings tab doesn't need data loading
+}
+
 // Auth Functions
-// Auth Functions
-function checkSession() {
-    // For simplicity allow admin page to load; actual protection happens server-side when making requests.
-    renderProjects();
+async function checkSession() {
+    // Verify authentication by making a test API call
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/auth/me', {
+            credentials: 'include'
+        });
+
+        // If we get a 401 or 403, redirect to login
+        if (resp.status === 401 || resp.status === 403) {
+            alert('Please log in to access the admin panel');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        const data = await resp.json();
+        if (!data.success) {
+            throw new Error('Auth failed');
+        }
+
+        // If successful, render projects
+        renderProjects();
+    } catch (err) {
+        console.error('Session check failed:', err);
+        alert('Session check failed or expired');
+        window.location.href = 'index.html';
+    }
 }
 
 function showDashboard() {
     renderProjects();
 }
 
-function logout() {
+async function logout() {
+    try {
+        await fetch((window.API_BASE) + '/api/auth/logout', { credentials: 'include' });
+    } catch (e) {
+        console.error('Logout failed', e);
+    }
     sessionStorage.removeItem(AUTH_KEY);
     window.location.href = 'index.html'; // Redirect to main page
 }
@@ -195,37 +256,51 @@ function saveProject() {
     formData.append('description', document.getElementById('projectDesc').value || '');
     formData.append('featured', document.getElementById('featuredProject').checked ? 'true' : 'false');
     formData.append('link', document.getElementById('projectLink').value || '');
+    // Remove "isWorkingOn" if not in new backend spec, or keep if backend allows extra fields. 
+    // Spec says: startDate.month, startDate.year etc. we should structure them if backend expects nested or flattened.
+    // Spec: "startDate.month, startDate.year, etc." implying flattened keys "startDate.month" likely.
+    // If backend uses bodyParser with extend:true or similar to parse dot notation, we send "startDate.month".
+    // Or if it expects "startDate": JSON.stringify({...}).
+    // Based on "startDate.month" in prompt, I'll assume keys like "startDate.month" or just sending separate fields if backend constructs it.
+    // Let's assume the backend handles these fields or we send them as is.
+    formData.append('startDate.month', document.getElementById('startMonth').value || '');
+    formData.append('startDate.year', document.getElementById('startYear').value || '');
+    formData.append('endDate.month', document.getElementById('endMonth').value || '');
+    formData.append('endDate.year', document.getElementById('endYear').value || '');
     formData.append('isWorkingOn', document.getElementById('workingOn').checked ? 'true' : 'false');
-    formData.append('startMonth', document.getElementById('startMonth').value || '');
-    formData.append('startYear', document.getElementById('startYear').value || '');
-    formData.append('endMonth', document.getElementById('endMonth').value || '');
-    formData.append('endYear', document.getElementById('endYear').value || '');
-    if (currentSkills.length) formData.append('skills', JSON.stringify(currentSkills));
 
+    // Skills as comma-separated string
+    formData.append('skills', currentSkills.join(','));
+
+    // Image handling
     const fileInput = document.getElementById('mediaFile');
     if (fileInput && fileInput.files && fileInput.files[0]) {
-        formData.append('image', fileInput.files[0], fileInput.files[0].name);
-    } else {
-        // If only base64 preview exists, send as imageBase64
-        const mediaBase64 = document.getElementById('mediaBase64').value;
-        if (mediaBase64) formData.append('imageBase64', mediaBase64);
+        formData.append('image', fileInput.files[0]);
     }
 
     let url = '/api/projects';
     let method = 'POST';
 
     if (editIndex >= 0 && projects[editIndex]) {
-        const slug = projects[editIndex].slug;
-        if (slug) {
-            url = `/api/projects/${slug}`;
+        const id = projects[editIndex]._id || projects[editIndex].id || projects[editIndex].slug; // New backend might use _id
+        if (id) {
+            url = `/api/projects/${id}`;
             method = 'PUT';
         }
     }
 
     fetch((window.API_BASE) + url, { method: method, body: formData, credentials: 'include' })
-        .then(r => r.json())
-        .then(res => {
-            if (res.ok) {
+        .then(async r => {
+            const res = await r.json();
+
+            // Check if unauthorized
+            if (r.status === 401 || r.status === 403) {
+                alert('Unauthorized: Your session may have expired. Please log in again.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (res.success || r.ok) { // Check for success flag or HTTP 200
                 closeModal();
                 renderProjects();
                 const action = method === 'POST' ? 'created' : 'updated';
@@ -235,25 +310,37 @@ function saveProject() {
             }
         }).catch(err => {
             console.error(err);
-            alert('Failed to save project');
+            alert('Failed to save project: Network error');
         });
 }
 
 function deleteProject(index) {
     if (!confirm('Are you sure you want to delete this project?')) return;
     const p = projects[index];
-    if (!p || !p.slug) {
+    const id = p._id || p.id || p.slug; // Prefer ID for new backend
+
+    if (!id) {
         alert('Invalid project');
         return;
     }
 
-    fetch((window.API_BASE) + `/api/projects/${p.slug}`, {
+    fetch((window.API_BASE) + `/api/projects/${id}`, {
         method: 'DELETE',
         credentials: 'include'
     })
-        .then(r => r.json())
-        .then(res => {
-            if (res.message === 'Project deleted successfully') { // Check for success message or status
+        .then(async r => {
+            const res = await r.json();
+
+            // Check if unauthorized
+            if (r.status === 401 || r.status === 403) {
+                alert('Unauthorized: Your session may have expired. Please log in again.');
+                // Redirect to index page to re-authenticate
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Check for success
+            if (r.ok || res.success) {
                 renderProjects();
                 alert('Project deleted successfully');
             } else {
@@ -261,7 +348,7 @@ function deleteProject(index) {
             }
         }).catch(err => {
             console.error(err);
-            alert('Failed to delete project');
+            alert('Failed to delete project: Network error');
         });
 }
 
@@ -306,10 +393,10 @@ function editProject(index) {
 async function renderProjects() {
     projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Loading...</p>';
     try {
-        const resp = await fetch((window.API_BASE) + '/api/projects/manifest.json');
+        const resp = await fetch((window.API_BASE) + '/api/projects', { credentials: 'include' });
         if (!resp.ok) throw new Error('Failed');
         const data = await resp.json();
-        projects = data || [];
+        projects = data.data || data || []; // Handle potential { success: true, data: [] } structure or direct array
 
         projectsList.innerHTML = '';
         if (projects.length === 0) {
@@ -341,3 +428,278 @@ async function renderProjects() {
         projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Failed to load projects.</p>';
     }
 }
+
+// Achievements CRUD
+async function loadAchievements() {
+    const list = document.getElementById('achievementsList');
+    list.innerHTML = '<p>Loading...</p>';
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/achievements', { credentials: 'include' });
+        const data = await resp.json();
+        achievements = data.data || data || [];
+
+        list.innerHTML = '';
+        if (achievements.length === 0) {
+            list.innerHTML = '<p>No achievements yet.</p>';
+            return;
+        }
+
+        achievements.forEach((ach, index) => {
+            const card = document.createElement('div');
+            card.className = 'project-card-admin';
+            let img = ach.image || ach.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image';
+            if (img.startsWith('/') && window.API_BASE) img = window.API_BASE + img;
+
+            card.innerHTML = `
+                <img src="${img}" class="project-thumb">
+                <div class="project-actions">
+                     <button onclick="editAchievement(${index})" style="background:none; border:none; cursor:pointer; color:#3b82f6; margin:0 5px;" title="Edit"><i class="fas fa-edit"></i></button>
+                     <button onclick="deleteAchievement('${ach._id || ach.id}')" style="background:none; border:none; cursor:pointer; color:#ef4444; margin:0 5px;" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
+                <h3>${ach.title}</h3>
+                <p>${ach.description || ''}</p>
+             `;
+            list.appendChild(card);
+        });
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<p>Failed to load achievements.</p>';
+    }
+}
+
+function openAddAchievementModal() {
+    document.getElementById('achEditId').value = '';
+    document.getElementById('achievementForm').reset();
+    document.getElementById('achievementModal').style.display = 'flex';
+}
+
+function closeAchievementModal() {
+    document.getElementById('achievementModal').style.display = 'none';
+}
+
+function editAchievement(index) {
+    const ach = achievements[index];
+    document.getElementById('achEditId').value = ach._id || ach.id;
+    document.getElementById('achTitle').value = ach.title;
+    document.getElementById('achDesc').value = ach.description || '';
+    if (ach.eventDate) document.getElementById('achDate').value = new Date(ach.eventDate).toISOString().split('T')[0];
+    document.getElementById('achievementModal').style.display = 'flex';
+}
+
+async function saveAchievement() {
+    const id = document.getElementById('achEditId').value;
+    const title = document.getElementById('achTitle').value;
+    const desc = document.getElementById('achDesc').value;
+    const date = document.getElementById('achDate').value;
+    const file = document.getElementById('achImage').files[0];
+
+    if (!title) return alert('Title is required');
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', desc);
+    if (date) formData.append('eventDate', date);
+    if (file) formData.append('image', file);
+
+    const url = id ? `/api/achievements/${id}` : '/api/achievements';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const resp = await fetch((window.API_BASE) + url, {
+            method, body: formData, credentials: 'include'
+        });
+        if (resp.ok) {
+            closeAchievementModal();
+            loadAchievements();
+            alert('Achievement saved!');
+        } else {
+            const data = await resp.json();
+            alert('Failed: ' + (data.message || 'Error'));
+        }
+    } catch (e) { console.error(e); alert('Error saving achievement'); }
+}
+
+async function deleteAchievement(id) {
+    if (!confirm('Delete this achievement?')) return;
+    try {
+        const resp = await fetch((window.API_BASE) + `/api/achievements/${id}`, {
+            method: 'DELETE', credentials: 'include'
+        });
+        if (resp.ok) {
+            loadAchievements();
+        } else {
+            alert('Failed to delete');
+        }
+    } catch (e) { console.error(e); }
+}
+
+// Chatbot Settings
+async function loadChatbotSettings() {
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/chatbot/context', { credentials: 'include' });
+        const data = await resp.json();
+        currentChatbotContext = data.context || data || {};
+
+        document.getElementById('botAboutMe').value = currentChatbotContext.aboutMe || '';
+        renderFaqs(currentChatbotContext.faqs || []);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderFaqs(faqs) {
+    const container = document.getElementById('botFaqs');
+    container.innerHTML = '';
+    faqs.forEach((faq, index) => {
+        const div = document.createElement('div');
+        div.className = 'faq-item';
+        div.style.marginBottom = '10px';
+        div.style.padding = '10px';
+        div.style.background = 'var(--bg-primary)';
+        div.style.border = '1px solid var(--border-color)';
+        div.innerHTML = `
+            <input type="text" placeholder="Question" class="faq-q" value="${faq.q}" style="width:100%; margin-bottom:5px; padding:5px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+            <textarea placeholder="Answer" class="faq-a" rows="2" style="width:100%; padding:5px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">${faq.a}</textarea>
+            <button onclick="this.parentElement.remove()" style="color:red; margin-top:5px; background:none; border:none; cursor:pointer;">Remove</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addFaqItem() {
+    const container = document.getElementById('botFaqs');
+    const div = document.createElement('div');
+    div.className = 'faq-item';
+    div.style.marginBottom = '10px';
+    div.style.padding = '10px';
+    div.style.background = 'var(--bg-primary)';
+    div.style.border = '1px solid var(--border-color)';
+    div.innerHTML = `
+            <input type="text" placeholder="Question" class="faq-q" style="width:100%; margin-bottom:5px; padding:5px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+            <textarea placeholder="Answer" class="faq-a" rows="2" style="width:100%; padding:5px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);"></textarea>
+            <button onclick="this.parentElement.remove()" style="color:red; margin-top:5px; background:none; border:none; cursor:pointer;">Remove</button>
+        `;
+    container.appendChild(div);
+}
+
+async function saveChatbotSettings() {
+    const aboutMe = document.getElementById('botAboutMe').value;
+    const faqItems = document.querySelectorAll('.faq-item');
+    const faqs = [];
+    faqItems.forEach(item => {
+        const q = item.querySelector('.faq-q').value;
+        const a = item.querySelector('.faq-a').value;
+        if (q && a) faqs.push({ q, a });
+    });
+
+    try {
+        const resp = await fetch((window.API_BASE) + '/api/chatbot/context', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ aboutMe, faqs }),
+            credentials: 'include'
+        });
+        if (resp.ok) {
+            alert('Settings saved');
+        } else {
+            alert('Failed to save settings');
+        }
+    } catch (e) { console.error(e); alert('Error saving settings'); }
+}
+
+
+async function changePassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert("Please fill in all fields");
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert("New password must be at least 6 characters.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert("New passwords do not match!");
+        return;
+    }
+
+    try {
+        const resp = await fetch(window.API_BASE + '/api/auth/reset-password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ oldPassword: currentPassword, newPassword: newPassword }),
+            credentials: 'include'
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            alert(data.message || 'Password updated successfully');
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } else {
+            alert(data.message || 'Failed to update password');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error updating password: ' + e.message);
+    }
+}
+
+// Resume Handler
+async function handleResumeUpload() {
+    const fileInput = document.getElementById('resumeInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select a file to upload.");
+        return;
+    }
+
+    if (file.type !== 'application/pdf') {
+        alert("Only PDF files are allowed.");
+        fileInput.value = '';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('resume', file);
+
+    try {
+        const response = await fetch(`${window.API_BASE}/api/resume`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok || data.ok) {
+            alert(data.message || 'Resume uploaded successfully!');
+            fileInput.value = ''; // Clear input
+        } else {
+            alert(data.message || 'Failed to upload resume');
+        }
+    } catch (error) {
+        console.error('Error uploading resume:', error);
+        alert('Error uploading resume: ' + error.message);
+    }
+}
+
+// Global Exports
+window.switchTab = switchTab;
+window.openAddAchievementModal = openAddAchievementModal;
+window.closeAchievementModal = closeAchievementModal;
+window.editAchievement = editAchievement;
+window.saveAchievement = saveAchievement;
+window.deleteAchievement = deleteAchievement;
+window.saveChatbotSettings = saveChatbotSettings;
+window.addFaqItem = addFaqItem;
+window.changePassword = changePassword;
+window.handleResumeUpload = handleResumeUpload;

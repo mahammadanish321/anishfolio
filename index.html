@@ -7,6 +7,9 @@
   <title>anishfolio</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/portfolio.css" />
+  <link rel="stylesheet" href="css/modal-styles.css" />
+  <link rel="stylesheet" href="css/chatbot.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
@@ -27,24 +30,73 @@
   <!-- Particle Background -->
   <div class="particles" id="particles"></div>
 
-  <!-- Floating Action Button -->
-  <div class="fab-container">
-    <button class="fab-main" id="fabMain">
-      <i class="fas fa-plus"></i>
-    </button>
-    <div class="fab-options" id="fabOptions">
-      <button class="fab-option theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+
+
+  <!-- UI Dock (Replaces FAB & Scattered Buttons) -->
+  <div class="ui-dock-container">
+    <div class="ui-dock">
+
+      <!-- View Counter (Badge Style) -->
+      <div class="ui-dock-item view-counter-dock" id="viewCountDock" title="Total Views">
+        <i class="fas fa-eye"></i>
+        <span id="viewCountDisplay">...</span>
+      </div>
+
+      <div class="ui-dock-separator"></div>
+
+      <!-- Theme Toggle -->
+      <button class="ui-dock-item" onclick="toggleTheme()" title="Toggle Theme">
         <i class="fas fa-moon"></i>
-        <i class="fas fa-sun"></i>
+        <i class="fas fa-sun" style="display:none;"></i>
       </button>
-      <button class="fab-option" onclick="downloadCV()" title="Download CV">
-        <i class="fas fa-download"></i>
+
+      <!-- Chatbot -->
+      <button class="ui-dock-item" onclick="toggleChatbot()" title="Ask AI">
+        <i class="fas fa-robot"></i>
       </button>
-      <button class="fab-option" onclick="shareProfile()" title="Share Profile">
-        <i class="fas fa-share"></i>
+
+      <!-- Download CV -->
+      <button class="ui-dock-item" onclick="downloadCV()" title="Download CV">
+        <i class="fas fa-file-download"></i>
       </button>
-      <button class="fab-option" onclick="openIndexLogin()" title="Admin Access">
+
+      <!-- Share -->
+      <button class="ui-dock-item" onclick="shareProfile()" title="Share Profile">
+        <i class="fas fa-share-alt"></i>
+      </button>
+
+      <div class="ui-dock-separator"></div>
+
+      <!-- Admin Access -->
+      <button class="ui-dock-item" onclick="openIndexLogin()" title="Admin Access">
         <i class="fas fa-user-lock"></i>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Chatbot Widget -->
+  <div class="chatbot-container" id="chatbotContainer">
+    <div class="chatbot-header" id="chatbotHeader">
+      <div class="chatbot-title">
+        <i class="fas fa-robot"></i> Anish AI
+      </div>
+      <button onclick="toggleChatbot()" class="chatbot-close-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="chatbot-messages" id="chatbotMessages">
+      <div class="chat-message bot">
+        Hello! I'm Anish's AI assistant. Ask me anything about his projects, skills, or experience!
+      </div>
+    </div>
+
+    <div class="chatbot-input-area">
+      <input type="text" id="chatInput" class="chatbot-input-field" placeholder="Ask a question..."
+        onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button onclick="sendMessage()" id="chatSendBtn" class="chatbot-send-btn">
+        <i class="fas fa-paper-plane"></i>
       </button>
     </div>
   </div>
@@ -56,13 +108,14 @@
 
   <!-- Navigation -->
   <nav id="navbar">
-    <div class="logo">anishfolio.com</div>
+    <a href="index.html" class="logo">anishfolio</a>
     <div class="nav-links" id="navLinks">
       <a href="#home" class="nav-link active">Home</a>
       <a href="#services" class="nav-link">Services</a>
       <a href="#portfolio" class="nav-link">Projects</a>
       <a href="#experience" class="nav-link">Experience</a>
       <a href="#skills" class="nav-link">Skills</a>
+      <a href="#achievements" class="nav-link">Achievements</a>
       <a href="#how-i-work" class="nav-link">How I Work</a>
       <a href="#contact" class="nav-link">Contact</a>
     </div>
@@ -190,17 +243,22 @@
       </p>
     </div>
 
-    <div id="portfolioGrid" class="portfolio-grid">
-      <!-- Projects will be loaded dynamically here -->
-      <p class="loading-text" style="color: var(--text-secondary);">Loading amazing projects...</p>
+    <div id="portfolioGrid" class="portfolio-grid carousel-view">
+      <!-- Projects will be loaded here -->
     </div>
 
-    <div style="text-align: center; margin-top: 40px; display: none;">
-      <a href="projects.html" class="btn btn-primary"
-        style="padding: 12px 30px; font-size: 1.1rem; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; box-shadow: var(--shadow-md);">
-        <i class="fas fa-th-large"></i> See All Projects
-      </a>
+    <!-- Carousel Controls -->
+    <div class="carousel-controls">
+      <button id="prevProjectBtn" class="carousel-btn" aria-label="Previous Projects">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button id="nextProjectBtn" class="carousel-btn" aria-label="Next Projects">
+        <i class="fas fa-chevron-right"></i>
+      </button>
     </div>
+
+    <div id="seeAllProjectsContainer" style="text-align: center; margin-top: 30px; display: none;">
+      <a href="projects.html" class="btn btn-primary">See All Projects <i class="fas fa-arrow-right"></i></a>
     </div>
   </section>
 
@@ -408,6 +466,26 @@
     </div>
   </section>
 
+
+  <!-- Achievements Section -->
+  <section class="achievement-gallery animate-on-scroll" id="achievements">
+    <div class="section-header">
+      <span class="section-badge">Recognition</span>
+      <h2 class="section-title">Achievements</h2>
+      <p class="section-description">
+        Milestones and recognitions granted for my work and contributions.
+      </p>
+    </div>
+
+    <div class="gallery-container">
+      <div class="gallery-track" id="achievementsTrack">
+        <!-- Achievements loaded dynamically -->
+        <p class="loading-text" style="color: var(--text-secondary); width: 100%; text-align: center;">Loading
+          achievements...</p>
+      </div>
+    </div>
+  </section>
+
   <!-- How I Work Section -->
   <section class="testimonials animate-on-scroll" id="how-i-work">
     <div class="section-header">
@@ -421,6 +499,8 @@
       </p>
     </div>
   </section>
+
+
 
   <!-- Contact Section -->
   <section class="contact animate-on-scroll" id="contact">
@@ -511,6 +591,34 @@
     </div>
   </section>
 
+  <!-- Project Details Modal (Rebuilt) -->
+  <div id="projectModal" class="project-modal-overlay">
+    <div class="project-modal-content">
+      <button class="close-project-modal" onclick="closeProjectModal()">&times;</button>
+
+      <div class="project-modal-header">
+        <img id="modalImage" src="" alt="Project Preview">
+      </div>
+
+      <div class="project-modal-body">
+        <div class="modal-info-bar">
+          <h2 id="modalTitle">Project Title</h2>
+          <div id="modalTechStack" class="modal-tech-stack"></div>
+        </div>
+
+        <div class="modal-description">
+          <p id="modalDescription">Project description goes here...</p>
+        </div>
+
+        <div class="modal-actions">
+          <a id="modalLiveLink" href="#" target="_blank" class="btn btn-primary">
+            Visit Website <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer style="padding: 2rem; text-align: center; border-top: 1px solid var(--border-color); margin-top: 50px;">
     <p style="color: var(--text-secondary);">&copy; 2026 Anish. All rights reserved.</p>
@@ -518,61 +626,26 @@
   </footer>
 
 
-  <!-- Project Details Modal -->
-  <div id="projectDetailsModal" class="project-modal-overlay" style="display: none;">
-    <div class="project-modal-content">
-      <button class="close-project-modal" onclick="closeProjectDetails()"><i class="fas fa-times"></i></button>
 
-      <div class="project-modal-image">
-        <img id="modalProjectImage" src="" alt="Project Image">
-      </div>
-
-      <div class="project-modal-body">
-        <div class="project-modal-header">
-          <h2 id="modalProjectTitle">Project Title</h2>
-          <span id="modalProjectStatus" class="status-badge"></span>
-        </div>
-
-        <div class="project-modal-meta">
-          <div class="meta-item">
-            <i class="far fa-calendar-alt"></i>
-            <span id="modalProjectDate">Jan 2024 - Present</span>
-          </div>
-        </div>
-
-        <div class="project-modal-tags" id="modalProjectTags">
-          <!-- Skills injected here -->
-        </div>
-
-        <div class="project-modal-desc">
-          <p id="modalProjectDesc">Description goes here...</p>
-        </div>
-
-        <div class="project-modal-footer">
-          <a id="modalProjectLink" href="#" target="_blank" class="btn btn-primary modal-action-btn">
-            Visit Live Site <i class="fas fa-external-link-alt"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
   <!-- Login Overlay for Admin Access -->
   <div id="indexLoginOverlay" class="login-overlay"
-    style="display: none; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 10000;">
+    style="display: none; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); z-index: 10000;">
     <div class="login-box"
-      style="background: var(--bg-secondary); padding: 2rem; border-radius: 12px; text-align: center; box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); width: 320px;">
-      <h2 style="margin-bottom: 1.5rem; color: var(--text-primary);">Admin Access</h2>
+      style="background: rgba(var(--bg-primary-rgb), 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 2.5rem; border-radius: 20px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); width: 360px; max-width: 90%;">
+      <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.8rem; font-weight: 700;">Admin Access
+      </h2>
       <input type="password" id="indexAdminPassword" placeholder="Enter Password"
-        style="width: 100%; padding: 12px; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
-      <div style="display: flex; gap: 10px; justify-content: center;">
-        <button onclick="checkIndexPassword()" class="btn btn-primary" style="padding: 10px 20px;">Unlock</button>
+        style="width: 100%; padding: 14px; margin-bottom: 1.5rem; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.15); background: rgba(255, 255, 255, 0.9); color: #1a202c !important; font-size: 1rem; box-sizing: border-box;">
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button onclick="checkIndexPassword()" class="btn btn-primary"
+          style="padding: 12px 28px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Unlock</button>
         <button onclick="closeIndexLogin()" class="btn btn-secondary"
-          style="padding: 10px 20px; background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);">Cancel</button>
+          style="padding: 12px 28px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.2); color: var(--text-primary); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Cancel</button>
       </div>
-      <p id="indexLoginError" style="color: #ef4444; margin-top: 10px; font-size: 0.9rem;"></p>
+      <p id="indexLoginError" style="color: #ef4444; margin-top: 12px; font-size: 0.9rem; font-weight: 500;"></p>
     </div>
   </div>
 
@@ -582,7 +655,7 @@
     // API Configuration
     // For local dev: 'http://localhost:5000'
     // For production: 'https://anishfolio-server.onrender.com'
-    window.API_BASE = 'https://anishfolio-backend-1.onrender.com'; 
+    window.API_BASE = 'http://localhost:5000';  
   </script>
   <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
   <script src="js/script.js"></script>
@@ -590,10 +663,20 @@
     import { view } from './js/view.js';
     view();
   </script>
-  <div id="viewCounter" class="view-counter-fab" style="opacity: 0; transition: opacity 0.5s ease;">
-    <i class="fas fa-eye"></i>
-    <span id="viewCountDisplay">...</span>
-  </div>
+  <script>
+    // Fail-safe Loader Removal
+    window.addEventListener('load', function () {
+      var loader = document.getElementById('loader');
+      if (loader) {
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(function () {
+          loader.style.display = 'none';
+        }, 100);
+      }
+    });
+  </script>
+
 </body>
 
 
