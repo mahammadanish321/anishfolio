@@ -51,11 +51,17 @@ function switchTab(tabName) {
 }
 
 // Auth Functions
+function getAuthHeaders() {
+    const token = localStorage.getItem('admin_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 async function checkSession() {
     // Verify authentication by making a test API call
     try {
         const resp = await fetch((window.API_BASE) + '/api/auth/me', {
-            credentials: 'include'
+            credentials: 'include',
+            headers: getAuthHeaders()
         });
 
         // If we get a 401 or 403, redirect to login
@@ -85,7 +91,10 @@ function showDashboard() {
 
 async function logout() {
     try {
-        await fetch((window.API_BASE) + '/api/auth/logout', { credentials: 'include' });
+        await fetch((window.API_BASE) + '/api/auth/logout', {
+            credentials: 'include',
+            headers: getAuthHeaders()
+        });
     } catch (e) {
         console.error('Logout failed', e);
     }
@@ -289,7 +298,12 @@ function saveProject() {
         }
     }
 
-    fetch((window.API_BASE) + url, { method: method, body: formData, credentials: 'include' })
+    fetch((window.API_BASE) + url, {
+        method: method,
+        body: formData,
+        credentials: 'include',
+        headers: getAuthHeaders()
+    })
         .then(async r => {
             const res = await r.json();
 
@@ -326,7 +340,8 @@ function deleteProject(index) {
 
     fetch((window.API_BASE) + `/api/projects/${id}`, {
         method: 'DELETE',
-        credentials: 'include'
+        credentials: 'include',
+        headers: getAuthHeaders()
     })
         .then(async r => {
             const res = await r.json();
@@ -393,7 +408,10 @@ function editProject(index) {
 async function renderProjects() {
     projectsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Loading...</p>';
     try {
-        const resp = await fetch((window.API_BASE) + '/api/projects', { credentials: 'include' });
+        const resp = await fetch((window.API_BASE) + '/api/projects', {
+            credentials: 'include',
+            headers: getAuthHeaders()
+        });
         if (!resp.ok) throw new Error('Failed');
         const data = await resp.json();
         projects = data.data || data || []; // Handle potential { success: true, data: [] } structure or direct array
@@ -434,7 +452,10 @@ async function loadAchievements() {
     const list = document.getElementById('achievementsList');
     list.innerHTML = '<p>Loading...</p>';
     try {
-        const resp = await fetch((window.API_BASE) + '/api/achievements', { credentials: 'include' });
+        const resp = await fetch((window.API_BASE) + '/api/achievements', {
+            credentials: 'include',
+            headers: getAuthHeaders()
+        });
         const data = await resp.json();
         achievements = data.data || data || [];
 
@@ -506,7 +527,10 @@ async function saveAchievement() {
 
     try {
         const resp = await fetch((window.API_BASE) + url, {
-            method, body: formData, credentials: 'include'
+            method,
+            body: formData,
+            credentials: 'include',
+            headers: getAuthHeaders()
         });
         if (resp.ok) {
             closeAchievementModal();
@@ -523,7 +547,9 @@ async function deleteAchievement(id) {
     if (!confirm('Delete this achievement?')) return;
     try {
         const resp = await fetch((window.API_BASE) + `/api/achievements/${id}`, {
-            method: 'DELETE', credentials: 'include'
+            method: 'DELETE',
+            credentials: 'include',
+            headers: getAuthHeaders()
         });
         if (resp.ok) {
             loadAchievements();
@@ -536,7 +562,10 @@ async function deleteAchievement(id) {
 // Chatbot Settings
 async function loadChatbotSettings() {
     try {
-        const resp = await fetch((window.API_BASE) + '/api/chatbot/context', { credentials: 'include' });
+        const resp = await fetch((window.API_BASE) + '/api/chatbot/context', {
+            credentials: 'include',
+            headers: getAuthHeaders()
+        });
         const data = await resp.json();
         currentChatbotContext = data.context || data || {};
 
@@ -595,7 +624,10 @@ async function saveChatbotSettings() {
     try {
         const resp = await fetch((window.API_BASE) + '/api/chatbot/context', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({ aboutMe, faqs }),
             credentials: 'include'
         });
@@ -631,7 +663,10 @@ async function changePassword() {
     try {
         const resp = await fetch(window.API_BASE + '/api/auth/reset-password', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({ oldPassword: currentPassword, newPassword: newPassword }),
             credentials: 'include'
         });
@@ -675,6 +710,7 @@ async function handleResumeUpload() {
         const response = await fetch(`${window.API_BASE}/api/resume`, {
             method: 'POST',
             credentials: 'include',
+            headers: getAuthHeaders(),
             body: formData
         });
 

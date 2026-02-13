@@ -836,10 +836,15 @@ function checkIndexPassword() {
         credentials: 'include',
         body: JSON.stringify({ password })
     }).then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+
         if (r.ok) {
+            // Save token if available (fallback for cross-site cookie issues)
+            if (data.token) {
+                localStorage.setItem('admin_token', data.token);
+            }
             window.location.href = 'admin.html';
         } else {
-            const data = await r.json().catch(() => ({}));
             errorMsg.textContent = data.message || 'Incorrect password';
             playClickSound();
             const box = indexLoginOverlay.querySelector('.login-box');
