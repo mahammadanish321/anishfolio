@@ -38,6 +38,46 @@
     border-color: rgba(var(--primary-rgb), 0.5);
 }
 
+/* Medal Rankings - Robust Nth-Child Selectors */
+.portfolio-card:nth-child(1)::before,
+.portfolio-card:nth-child(2)::before,
+.portfolio-card:nth-child(3)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    pointer-events: none;
+    border-radius: 16px;
+    box-sizing: border-box;
+}
+
+/* Gold - 1st Card */
+.portfolio-card:nth-child(1)::before {
+    background: rgba(255, 215, 0, 0.15);
+    /* Light Gold tint */
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.2), 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+/* Bronze - 2nd Card */
+.portfolio-card:nth-child(2)::before {
+    background: rgba(205, 127, 50, 0.15);
+    /* Light Bronze tint */
+    border: 2px solid rgba(205, 127, 50, 0.5);
+    box-shadow: inset 0 0 20px rgba(205, 127, 50, 0.1), 0 0 20px rgba(205, 127, 50, 0.1);
+}
+
+/* Silver - 3rd Card */
+.portfolio-card:nth-child(3)::before {
+    background: rgba(224, 224, 224, 0.15);
+    /* Light Silver tint */
+    border: 2px solid rgba(224, 224, 224, 0.5);
+    box-shadow: inset 0 0 20px rgba(224, 224, 224, 0.1), 0 0 20px rgba(224, 224, 224, 0.1);
+}
+
 .portfolio-image {
     height: 220px;
     width: 100%;

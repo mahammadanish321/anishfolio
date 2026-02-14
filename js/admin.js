@@ -281,6 +281,12 @@ function saveProject() {
     // Skills as comma-separated string
     formData.append('skills', currentSkills.join(','));
 
+    // Order
+    const order = document.getElementById('projectOrder').value;
+    if (order) {
+        formData.append('order', order);
+    }
+
     // Image handling
     const fileInput = document.getElementById('mediaFile');
     if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -373,6 +379,9 @@ function editProject(index) {
 
     document.getElementById('projectName').value = p.title;
     document.getElementById('projectDesc').value = p.description;
+
+    // Order
+    document.getElementById('projectOrder').value = p.order || '';
 
     // Media preview
     const projectImage = p.image || (p.images && p.images[0] && p.images[0].url) || '';

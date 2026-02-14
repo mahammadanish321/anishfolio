@@ -531,12 +531,35 @@ async function loadProjects() {
 
 // Helper to render project cards into the grid
 function renderProjectCards(projects, grid) {
+    console.log('Rendering', projects.length, 'project cards');
+
+    // Sort projects: Order (ascending) -> Date (descending)
+    projects.sort((a, b) => {
+        // Handle explicit order first - ensuring numbers
+        const orderA = a.order ? parseInt(a.order) : 9999;
+        const orderB = b.order ? parseInt(b.order) : 9999;
+
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+
+        // Secondary sort by date (newest first)
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA;
+    });
 
     projects.forEach((project, index) => {
+        // Debug log for order
+        console.log(`Project: ${project.title}, Order: ${project.order}`);
+
         const card = document.createElement('div');
         card.className = 'portfolio-card animate-on-scroll';
         card.style.animationDelay = `${index * 0.1}s`;
-        card.style.cursor = 'pointer';
+
+        // Medal styling is now handled by CSS :nth-child selectors in portfolio.css
+        // This ensures the first 3 cards always get the Gold/Silver/Bronze styles
+        // regardless of re-renders or JS timing.
 
         const tagsHtml = (project.tags || []).slice(0, 1).map(skill =>
             `<span class="project-tag">${skill}</span>`
@@ -830,6 +853,8 @@ function checkIndexPassword() {
     const password = document.getElementById('indexAdminPassword').value;
     const errorMsg = document.getElementById('indexLoginError');
 
+    console.log('Attempting login to:', window.API_BASE + '/api/auth/login');
+
     fetch((window.API_BASE) + '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -837,6 +862,7 @@ function checkIndexPassword() {
         body: JSON.stringify({ password })
     }).then(async (r) => {
         const data = await r.json().catch(() => ({}));
+        console.log('Login response:', r.status, data);
 
         if (r.ok) {
             // Save token if available (fallback for cross-site cookie issues)
@@ -845,7 +871,9 @@ function checkIndexPassword() {
             }
             window.location.href = 'admin.html';
         } else {
-            errorMsg.textContent = data.message || 'Incorrect password';
+            console.warn('Login failed against:', window.API_BASE);
+            const serverName = window.API_BASE.includes('localhost') ? 'Local Server' : 'Production Server';
+            errorMsg.innerHTML = `${data.message || 'Incorrect password'}<br><small style="opacity:0.7">(${serverName})</small>`;
             playClickSound();
             const box = indexLoginOverlay.querySelector('.login-box');
             if (box) {
@@ -854,8 +882,9 @@ function checkIndexPassword() {
             }
         }
     }).catch(err => {
-        console.error(err);
-        errorMsg.textContent = 'Login failed';
+        console.error('Login error:', err);
+        const serverName = window.API_BASE.includes('localhost') ? 'Local Server' : 'Production Server';
+        errorMsg.innerHTML = `Login failed. Check server connection.<br><small style="opacity:0.7">(${serverName})</small>`;
     });
 }
 
@@ -1047,6 +1076,35 @@ window.closeProjectModal = closeProjectModal;
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     loadFeaturedProjects();
+});
+
+// Scroll Animation Logic
+function handleScrollAnimations() {
+    const elements = document.querySelectorAll('.animate-on-scroll');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animated');
+                // observer.unobserve(entry.target); // Optional: Stop observing once visible
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    });
+
+    elements.forEach(el => observer.observe(el));
+}
+
+// Global exposure
+window.handleScrollAnimations = handleScrollAnimations;
+
+// Initial call
+document.addEventListener('DOMContentLoaded', () => {
+    handleScrollAnimations();
+    // Re-check after a short delay to account for dynamic content
+    setTimeout(handleScrollAnimations, 500);
 });
 
 // Resume Download
