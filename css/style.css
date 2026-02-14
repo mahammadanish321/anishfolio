@@ -339,27 +339,35 @@ nav {
     justify-content: space-between;
     align-items: center;
     padding: 20px 5%;
-    background: rgba(254, 253, 251, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    /* Glassmorphism with Theme Tint */
+    background: rgba(44, 95, 93, 0.15);
+    /* Primary Teal Tint */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
     z-index: 1000;
     transition: all 0.3s ease;
 }
 
 [data-theme="dark"] nav {
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(74, 139, 135, 0.15);
+    /* Darker Teal Tint */
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nav-scrolled {
     padding: 15px 5%;
     box-shadow: var(--shadow-md);
-    background: rgba(254, 253, 251, 0.98);
+    background: rgba(44, 95, 93, 0.3);
+    /* Stronger tint on scroll */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 [data-theme="dark"] .nav-scrolled {
-    background: rgba(15, 23, 42, 0.98);
+    background: rgba(15, 23, 42, 0.6);
 }
 
 .logo {
@@ -3917,6 +3925,8 @@ nav {
         font-size: 4rem;
         background: -webkit-linear-gradient(45deg, #2c5f5d, #4a8b87);
         -webkit-background-clip: text;
+        background-clip: text;
+        /* Standard property for compatibility */
         -webkit-text-fill-color: transparent;
     }
 
