@@ -3806,4 +3806,173 @@ nav {
         margin: 0 2px;
         flex-shrink: 0;
     }
+
+    /* --- HERO MOBILE LAYOUT --- */
+    /* --- HERO MOBILE LAYOUT - MAGAZINE STYLE --- */
+    .hero {
+        display: block;
+        /* No flex */
+        padding: 0;
+        min-height: 100vh;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* Image Layer - ON TOP (Z-Index 20) */
+    .hero-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 20;
+        margin: 0;
+        pointer-events: none;
+    }
+
+    .hero-background img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+        transform: scale(1.1);
+        /* Slight zoom for impact */
+    }
+
+    /* Existing Overlay */
+    /* Text Layer - Mixed Z-Index */
+    .hero-container {
+        position: relative;
+        z-index: auto;
+        /* Allow children to interleave */
+        width: 100%;
+        height: 100%;
+        padding: 120px 20px 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        pointer-events: none;
+        /* Let clicks pass to underlying interactions if any */
+    }
+
+    .hero-left {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        padding: 0;
+        margin: 0;
+        text-align: left;
+        display: contents;
+        /* unwrap styling to let children position freely */
+    }
+
+    /* We need to adjust stacking context */
+    .hero-container {
+        z-index: 15;
+        /* Container is above background? */
+        /* If we want text BEHIND image, the image needs to be on top. */
+        /* Currently .hero-background is relative/flow.
+           Let's make .hero-background z-index higher than .hero-left text.
+        */
+    }
+
+    .hero-background {
+        z-index: 20;
+        /* Image ON TOP */
+        pointer-events: none;
+        /* Let clicks pass through if needed */
+        mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        /* Optional fade at bottom */
+        -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    }
+
+    [data-theme='dark'] .hero-left {
+        background: transparent;
+        border-color: transparent;
+    }
+
+    /* TITLE: Behind Image (Z-Index 10) */
+    .hero-title {
+        position: relative;
+        z-index: 10;
+        font-size: 3.5rem;
+        font-weight: 900;
+        line-height: 0.9;
+        margin-bottom: 0;
+        color: var(--primary-color);
+        text-shadow: none;
+        opacity: 0.95;
+    }
+
+    [data-theme='dark'] .hero-title {
+        color: #e2e8f0;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tweaking the highlight */
+    .hero-title .highlight {
+        display: block;
+        font-size: 4rem;
+        background: -webkit-linear-gradient(45deg, #2c5f5d, #4a8b87);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* DESCRIPTION: Front of Image (Z-Index 30) - Bottom Edge */
+    .hero-description {
+        position: absolute;
+        bottom: 120px;
+        /* Above dock area */
+        left: 20px;
+        right: 20px;
+        z-index: 30;
+        font-size: 1.1rem;
+        max-width: 100%;
+        color: #ffffff;
+        /* Make white for visibility on image */
+        font-weight: 600;
+        line-height: 1.4;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        /* Strong shadow for readability */
+        margin: 0;
+        background: rgba(0, 0, 0, 0);
+        /* No bg */
+        pointer-events: auto;
+    }
+
+    [data-theme='dark'] .hero-description {
+        color: #ffffff;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Hide requested elements */
+    .hero-email,
+    .hero-experience,
+    .hero-badge {
+        display: none !important;
+    }
+
+    /* MERN Badge - ON TOP (Z-Index 35) */
+    .hero-right {
+        position: static;
+        padding: 0;
+        min-height: 0;
+    }
+
+    .hero-right .hero-badge-cert {
+        position: absolute;
+        top: 100px;
+        /* Safe distance from top/nav */
+        right: 20px;
+        width: auto;
+        padding: 8px 12px;
+        font-size: 0.7rem;
+        transform: rotate(5deg);
+        z-index: 35;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+    }
 }
