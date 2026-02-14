@@ -79,7 +79,7 @@
   <div class="chatbot-container" id="chatbotContainer">
     <div class="chatbot-header" id="chatbotHeader">
       <div class="chatbot-title">
-        <i class="fas fa-robot"></i> Anish AI
+        <i class="fas fa-user-circle"></i> anishfolio
       </div>
       <button onclick="toggleChatbot()" class="chatbot-close-btn">
         <i class="fas fa-times"></i>
@@ -88,7 +88,7 @@
 
     <div class="chatbot-messages" id="chatbotMessages">
       <div class="chat-message bot">
-        Hello! I'm Anish's AI assistant. Ask me anything about his projects, skills, or experience!
+        Hello! I'm Anish. Ask me anything about his projects, skills, or experience!
       </div>
     </div>
 
@@ -657,9 +657,12 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     // API Configuration
-    // For local dev: 'http://localhost:5000'
-    // For production: 'https://anishfolio-backend.onrender.com'
-    window.API_BASE = 'https://anishfolio-backend.onrender.com';
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      window.API_BASE = 'http://localhost:5000';
+    } else {
+      window.API_BASE = 'https://anishfolio-backend.onrender.com';
+    }
+
 
     function togglePasswordVisibility() {
       const passwordInput = document.getElementById('indexAdminPassword');
