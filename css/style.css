@@ -3603,9 +3603,10 @@ nav {
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.6);
+    /* Lighter, more paper-like */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -3620,7 +3621,8 @@ nav {
 }
 
 [data-theme='dark'] .ui-dock {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(30, 41, 59, 0.85);
+    /* Proper slate color for dark mode */
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -3737,24 +3739,71 @@ nav {
 /* Mobile Adjustments */
 @media (max-width: 480px) {
     .ui-dock-container {
-        width: 95%;
+        width: 100%;
         bottom: 20px;
+        left: 0;
+        transform: none;
+        padding: 0 10px;
+        justify-content: center;
+        /* Center if content fits, otherwise start */
+    }
+
+    .ui-dock-container.dock-hidden {
+        transform: translateY(100px);
     }
 
     .ui-dock {
         width: 100%;
-        justify-content: space-between;
-        padding: 10px;
-        gap: 5px;
+        max-width: 100%;
+        overflow-x: auto;
+        justify-content: flex-start;
+        /* Alignment for scroll */
+        padding: 10px 15px;
+        gap: 12px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.85);
+        /* More solid on mobile */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .ui-dock::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
+    }
+
+    [data-theme='dark'] .ui-dock {
+        background: rgba(30, 41, 59, 0.95);
     }
 
     .view-counter-dock {
-        padding: 5px 10px;
+        padding: 0 12px;
+        height: 44px;
+        /* Touch target */
         font-size: 0.85rem;
+        flex-shrink: 0;
+        background: rgba(44, 95, 93, 0.1);
+        border-radius: 12px;
     }
 
     .ui-dock-item {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        /* Minimum touch target */
+        height: 44px;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        background: transparent;
+    }
+
+    .ui-dock-item:active {
+        transform: scale(0.95);
+    }
+
+    .ui-dock-separator {
+        height: 20px;
+        margin: 0 2px;
+        flex-shrink: 0;
     }
 }

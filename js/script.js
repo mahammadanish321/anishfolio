@@ -28,8 +28,13 @@ function initAudioContext() {
     }, { once: true });
 });
 
+// Sound State
+let isMuted = false;
+
 // Optimized Click Sound Effect
 function playClickSound() {
+    if (isMuted) return; // Respect mute state
+
     const ctx = initAudioContext();
     if (!ctx) return;
 
@@ -53,6 +58,40 @@ function playClickSound() {
     } catch (error) {
         // console.warn('Sound playback failed:', error);
     }
+}
+
+// Toggle Sound Logic
+function toggleSound() {
+    isMuted = !isMuted;
+    updateSoundIcon();
+    localStorage.setItem('isMuted', isMuted);
+
+    // Provide feedback only if unmuting
+    if (!isMuted) playClickSound();
+}
+
+function updateSoundIcon() {
+    const icon = document.getElementById('soundIcon');
+    if (icon) {
+        if (isMuted) {
+            icon.className = 'fas fa-volume-mute';
+            icon.style.color = 'var(--text-secondary)';
+        } else {
+            icon.className = 'fas fa-volume-up';
+            icon.style.color = ''; // Reset to default (inherited)
+        }
+    }
+}
+
+// Initialize Sound Preference
+function loadSoundPreference() {
+    const saved = localStorage.getItem('isMuted');
+    if (saved === 'true') {
+        isMuted = true;
+    } else {
+        isMuted = false;
+    }
+    updateSoundIcon();
 }
 
 // Theme Toggle Function
@@ -433,6 +472,7 @@ function startAnimations() {
             updateNavbar();
             addClickSounds();
             loadSavedTheme();
+            loadSoundPreference(); // Load sound settings
             initAudioContext();
         }, 500);
     } catch (error) {
@@ -531,7 +571,7 @@ async function loadProjects() {
 
 // Helper to render project cards into the grid
 function renderProjectCards(projects, grid) {
-    console.log('Rendering', projects.length, 'project cards');
+    // console.log('Rendering', projects.length, 'project cards');
 
     // Sort projects: Order (ascending) -> Date (descending)
     projects.sort((a, b) => {
@@ -551,7 +591,7 @@ function renderProjectCards(projects, grid) {
 
     projects.forEach((project, index) => {
         // Debug log for order
-        console.log(`Project: ${project.title}, Order: ${project.order}`);
+        // console.log(`Project: ${project.title}, Order: ${project.order}`);
 
         const card = document.createElement('div');
         card.className = 'portfolio-card animate-on-scroll';
@@ -687,14 +727,35 @@ async function loadAchievements() {
 // Chatbot Logic
 function toggleChatbot() {
     const container = document.getElementById('chatbotContainer');
+    const dock = document.querySelector('.ui-dock-container');
+    const isMobile = window.innerWidth <= 480;
+
     if (!container) return;
 
     container.classList.toggle('active');
 
-    if (container.classList.contains('active')) {
+    const isActive = container.classList.contains('active');
+
+    if (isActive) {
         playClickSound();
         const input = document.getElementById('chatInput');
         if (input) setTimeout(() => input.focus(), 100);
+
+        // Mobile specific behaviors
+        if (isMobile) {
+            // Hide Dock
+            if (dock) dock.classList.add('dock-hidden');
+            // Prevent background scrolling
+            document.body.style.overflow = 'hidden';
+        }
+    } else {
+        // Closing Check
+        if (isMobile) {
+            // Show Dock
+            if (dock) dock.classList.remove('dock-hidden');
+            // Restore scrolling
+            document.body.style.overflow = '';
+        }
     }
 }
 
@@ -853,7 +914,7 @@ function checkIndexPassword() {
     const password = document.getElementById('indexAdminPassword').value;
     const errorMsg = document.getElementById('indexLoginError');
 
-    console.log('Attempting login to:', window.API_BASE + '/api/auth/login');
+    // console.log('Attempting login to:', window.API_BASE + '/api/auth/login');
 
     fetch((window.API_BASE) + '/api/auth/login', {
         method: 'POST',
@@ -862,7 +923,7 @@ function checkIndexPassword() {
         body: JSON.stringify({ password })
     }).then(async (r) => {
         const data = await r.json().catch(() => ({}));
-        console.log('Login response:', r.status, data);
+        // console.log('Login response:', r.status, data);
 
         if (r.ok) {
             // Save token if available (fallback for cross-site cookie issues)
@@ -871,7 +932,7 @@ function checkIndexPassword() {
             }
             window.location.href = 'admin.html';
         } else {
-            console.warn('Login failed against:', window.API_BASE);
+            // console.warn('Login failed against:', window.API_BASE);
             const serverName = window.API_BASE.includes('localhost') ? 'Local Server' : 'Production Server';
             errorMsg.innerHTML = `${data.message || 'Incorrect password'}<br><small style="opacity:0.7">(${serverName})</small>`;
             playClickSound();
