@@ -811,6 +811,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// TTS Logic
+let currentAudio = null;
+let currentText = null;
+const audioCache = new Map();
+
+async function playTTS(text) {
+    if (!text) return;
+
+    // Check if toggling the same message
+    if (currentAudio && currentText === text) {
+        if (currentAudio.paused) {
+            currentAudio.play().catch(e => console.warn('Resume blocked:', e));
+        } else {
+            currentAudio.pause();
+        }
+        return;
+    }
+
+    // Stop functionality for new message
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+
+    currentText = text;
+
+    try {
+        let audioUrl;
+        if (audioCache.has(text)) {
+            // console.log('Using cached TTS');
+            audioUrl = audioCache.get(text);
+        } else {
+            // console.log('Fetching TTS for:', text);
+            const resp = await fetch((window.API_BASE) + '/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+
+            if (!resp.ok) {
+                const errorData = await resp.json().catch(() => ({}));
+                throw new Error(errorData.error || 'TTS request failed');
+            }
+
+            const blob = await resp.blob();
+            audioUrl = URL.createObjectURL(blob);
+            audioCache.set(text, audioUrl);
+        }
+
+        currentAudio = new Audio(audioUrl);
+        const playPromise = currentAudio.play();
+
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.warn('Auto-play blocked by browser policy:', e);
+                // Optional: Show a "Click to play" UI hint if needed, 
+                // but the speaker icon is already there for manual retry.
+            });
+        }
+
+        currentAudio.onended = () => {
+            // Audio finished. We keep currentText so next click replays it.
+        };
+
+    } catch (e) {
+        console.error('TTS Error:', e);
+        currentText = null;
+    }
+}
+
 async function sendMessage() {
     const input = document.getElementById('chatInput');
     const messages = document.getElementById('chatbotMessages');
@@ -846,9 +916,29 @@ async function sendMessage() {
 
         const botMsg = document.createElement('div');
         botMsg.className = 'chat-message bot';
-        botMsg.style.cssText = 'align-self: flex-start; background: var(--bg-primary); padding: 10px; border-radius: 0 10px 10px 10px; border: 1px solid var(--border-color); max-width: 80%;';
-        botMsg.textContent = data.answer || "I'm not sure how to answer that.";
+        botMsg.style.cssText = 'align-self: flex-start; background: var(--bg-primary); padding: 10px; border-radius: 0 10px 10px 10px; border: 1px solid var(--border-color); max-width: 80%; display: flex; align-items: center; gap: 8px;';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = data.answer || "I'm not sure how to answer that.";
+        botMsg.appendChild(textSpan);
+
+        // Speaker Icon for TTS
+        const speakerIcon = document.createElement('i');
+        speakerIcon.className = 'fas fa-volume-up';
+        speakerIcon.style.cssText = 'cursor: pointer; opacity: 0.6; font-size: 0.9em; flex-shrink: 0; transition: opacity 0.2s;';
+        speakerIcon.onmouseover = () => speakerIcon.style.opacity = '1';
+        speakerIcon.onmouseout = () => speakerIcon.style.opacity = '0.6';
+        speakerIcon.onclick = (e) => {
+            e.stopPropagation();
+            playTTS(data.answer);
+        };
+        botMsg.appendChild(speakerIcon);
+
         messages.appendChild(botMsg);
+
+        // Auto-play TTS
+        if (data.answer) playTTS(data.answer);
+
         playClickSound(); // Interaction feedback
     } catch (e) {
         loadingMsg.remove();
