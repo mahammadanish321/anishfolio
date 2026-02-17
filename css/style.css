@@ -33,7 +33,7 @@
     --primary-rgb: 74, 139, 135;
 }
 
-/* Dark Theme Colors */
+/* Dark Theme Colors - Matte Black Edition */
 [data-theme="dark"] {
     --primary-color: #4a8b87;
     --primary-light: #5fb3af;
@@ -42,29 +42,33 @@
     --accent-teal: #7dd3d8;
     --accent-orange: #fb7185;
     --accent-red: #f87171;
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-light: #94a3b8;
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-accent: #334155;
-    --border-color: #475569;
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-    --gradient-primary: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    --text-primary: #ededed;
+    --text-secondary: #a3a3a3;
+    --text-light: #737373;
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #171717;
+    --bg-accent: #262626;
+    --border-color: #333333;
+    --card-border: 1px solid rgba(255, 255, 255, 0.08);
+    --card-inner-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
+    --card-hover-border: 1px solid rgba(255, 255, 255, 0.15);
+    --card-hover-shadow: inset 0 0 30px rgba(255, 255, 255, 0.04);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.7);
+    --gradient-primary: linear-gradient(135deg, #171717 0%, #262626 100%);
     --gradient-secondary: linear-gradient(135deg, #4a8b87 0%, #5fb3af 100%);
     --gradient-accent: linear-gradient(135deg, #fbbf24 0%, #fb7185 100%);
-    --cream-primary: #1e293b;
-    --cream-secondary: #334155;
-    --cream-accent: #475569;
-    --nav-cream: #0f172a;
+    --cream-primary: #171717;
+    --cream-secondary: #262626;
+    --cream-accent: #333333;
+    --nav-cream: #0a0a0a;
     --gradient-text: linear-gradient(135deg, #4a8b87 0%, #5fb3af 100%);
 
     /* RGB values for glassmorphism */
-    --bg-primary-rgb: 15, 23, 42;
-    --bg-secondary-rgb: 30, 41, 59;
+    --bg-primary-rgb: 10, 10, 10;
+    --bg-secondary-rgb: 23, 23, 23;
     --primary-rgb: 74, 139, 135;
 }
 
@@ -81,6 +85,12 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] .ui-dock {
+    border: var(--card-border);
+    background: rgba(10, 10, 10, 0.85);
+    box-shadow: var(--card-inner-shadow), 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 /* Enhanced Loading Animation */
@@ -140,6 +150,17 @@ body {
     text-transform: uppercase;
     color: var(--text-secondary);
     animation: pulse-text 2s ease-in-out infinite;
+}
+
+[data-theme="dark"] .service-card {
+    border: var(--card-border);
+    box-shadow: var(--card-inner-shadow);
+    background: rgba(23, 23, 23, 0.5);
+}
+
+[data-theme="dark"] .service-card:hover {
+    border: var(--card-hover-border);
+    box-shadow: var(--card-hover-shadow);
 }
 
 @keyframes pulse-text {
@@ -351,9 +372,9 @@ nav {
 }
 
 [data-theme="dark"] nav {
-    background: rgba(74, 139, 135, 0.15);
-    /* Darker Teal Tint */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(10, 10, 10, 0.5);
+    /* Matte Black Tint */
+    border-bottom: var(--card-border);
 }
 
 .nav-scrolled {
@@ -367,7 +388,7 @@ nav {
 }
 
 [data-theme="dark"] .nav-scrolled {
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(10, 10, 10, 0.85);
 }
 
 .logo {
@@ -528,7 +549,7 @@ nav {
 }
 
 [data-theme="dark"] .hero-overlay {
-    background: rgba(15, 23, 42, 0.3);
+    background: rgba(10, 10, 10, 0.6);
 }
 
 .hero-container {
@@ -569,9 +590,22 @@ nav {
     transition: all 0.3s ease;
 }
 
+[data-theme="dark"] input,
+[data-theme="dark"] textarea {
+    border: var(--card-border);
+    background: rgba(23, 23, 23, 0.5);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: var(--card-inner-shadow);
+}
+
 [data-theme="dark"] .hero-badge {
-    background: rgba(30, 41, 59, 0.95);
-    border-color: rgba(71, 85, 105, 0.8);
+    background: rgba(23, 23, 23, 0.95);
+    border: var(--card-border);
+    box-shadow: var(--card-inner-shadow);
 }
 
 .hero-badge:hover {
@@ -581,7 +615,9 @@ nav {
 }
 
 [data-theme="dark"] .hero-badge:hover {
-    background: rgba(30, 41, 59, 1);
+    background: rgba(23, 23, 23, 1);
+    border: var(--card-hover-border);
+    box-shadow: var(--card-hover-shadow);
 }
 
 @keyframes badgePulse {
@@ -757,8 +793,9 @@ nav {
 }
 
 [data-theme="dark"] .hero-badge-cert {
-    background: rgba(30, 41, 59, 0.98);
-    border-color: rgba(71, 85, 105, 0.8);
+    background: rgba(23, 23, 23, 0.98);
+    border: var(--card-border);
+    box-shadow: var(--card-inner-shadow);
 }
 
 .hero-badge-cert:hover {
@@ -3985,4 +4022,50 @@ nav {
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         border-radius: 12px;
     }
+}
+
+/* Admin Login Modal Styles - Global */
+.admin-password-input {
+    width: 100%;
+    padding: 14px 45px 14px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.9);
+    color: #1a202c;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+#togglePasswordBtn {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #4a5568;
+    font-size: 1.1rem;
+    z-index: 10;
+    transition: color 0.3s ease;
+}
+
+/* Dark Mode Overrides for Admin Login */
+[data-theme="dark"] .admin-password-input {
+    background: rgba(23, 23, 23, 0.5);
+    border: var(--card-border);
+    color: var(--text-primary);
+    box-shadow: var(--card-inner-shadow);
+}
+
+[data-theme="dark"] .admin-password-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: var(--card-inner-shadow), 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
+
+[data-theme="dark"] #togglePasswordBtn {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] #togglePasswordBtn:hover {
+    color: var(--primary-color);
 }

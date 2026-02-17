@@ -643,10 +643,8 @@
       <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); font-size: 1.8rem; font-weight: 700;">Admin Access
       </h2>
       <div style="position: relative; width: 100%; margin-bottom: 1.5rem;">
-        <input type="password" id="indexAdminPassword" placeholder="Enter Password"
-          style="width: 100%; padding: 14px; padding-right: 45px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.15); background: rgba(255, 255, 255, 0.9); color: #1a202c !important; font-size: 1rem; box-sizing: border-box;">
-        <i class="fas fa-eye" id="togglePasswordBtn" onclick="togglePasswordVisibility()"
-          style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #4a5568; font-size: 1.1rem; z-index: 10;"></i>
+        <input type="password" id="indexAdminPassword" placeholder="Enter Password" class="admin-password-input">
+        <i class="fas fa-eye" id="togglePasswordBtn" onclick="togglePasswordVisibility()"></i>
       </div>
       <div style="display: flex; gap: 12px; justify-content: center;">
         <button onclick="checkIndexPassword()" class="btn btn-primary"
