@@ -904,11 +904,17 @@ async function sendMessage() {
     messages.appendChild(loadingMsg);
     messages.scrollTop = messages.scrollHeight;
 
+    // Use ephemeral session ID (resets on reload)
+    if (!window.currentChatSessionId) {
+        window.currentChatSessionId = crypto.randomUUID();
+    }
+    const sessionId = window.currentChatSessionId;
+
     try {
         const resp = await fetch((window.API_BASE) + '/api/chatbot/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question })
+            body: JSON.stringify({ question, sessionId })
         });
         const data = await resp.json();
 
@@ -918,9 +924,14 @@ async function sendMessage() {
         botMsg.className = 'chat-message bot';
         botMsg.style.cssText = 'align-self: flex-start; background: var(--bg-primary); padding: 10px; border-radius: 0 10px 10px 10px; border: 1px solid var(--border-color); max-width: 80%; display: flex; align-items: center; gap: 8px;';
 
-        const textSpan = document.createElement('span');
-        textSpan.textContent = data.answer || "I'm not sure how to answer that.";
-        botMsg.appendChild(textSpan);
+        const textDiv = document.createElement('div');
+        if (typeof marked !== 'undefined') {
+            textDiv.innerHTML = marked.parse(data.answer || "I'm not sure how to answer that.");
+        } else {
+            textDiv.textContent = data.answer || "I'm not sure how to answer that.";
+        }
+        textDiv.style.flex = '1'; // Ensure it takes available space
+        botMsg.appendChild(textDiv);
 
         // Speaker Icon for TTS
         const speakerIcon = document.createElement('i');
@@ -991,20 +1002,43 @@ function openIndexLogin() {
     } else {
         if (indexLoginOverlay) {
             indexLoginOverlay.style.display = 'flex';
+            // Hide UI Dock
+            const dock = document.querySelector('.ui-dock-container');
+            if (dock) dock.style.display = 'none';
+
             playClickSound();
+            // Auto focus and select
+            const pwdInput = document.getElementById('indexAdminPassword');
+            if (pwdInput) {
+                pwdInput.value = ''; // Clear previous attempts
+                setTimeout(() => {
+                    pwdInput.focus();
+                    pwdInput.select();
+                }, 100);
+            }
         }
     }
 }
 
 function closeIndexLogin() {
-    if (indexLoginOverlay) indexLoginOverlay.style.display = 'none';
+    if (indexLoginOverlay) {
+        indexLoginOverlay.style.display = 'none';
+        // Show UI Dock
+        const dock = document.querySelector('.ui-dock-container');
+        if (dock) dock.style.display = 'block';
+    }
 }
 
 function checkIndexPassword() {
-    const password = document.getElementById('indexAdminPassword').value;
+    // Re-apply trim() for robustness, assuming password shouldn't have leading/trailing spaces
+    const password = document.getElementById('indexAdminPassword').value.trim();
     const errorMsg = document.getElementById('indexLoginError');
 
-    // console.log('Attempting login to:', window.API_BASE + '/api/auth/login');
+    console.log('Login attempt:', {
+        apiBase: window.API_BASE,
+        passwordLength: password.length,
+        passwordMasked: password.replace(/./g, '*') // Security: don't log plain text
+    });
 
     fetch((window.API_BASE) + '/api/auth/login', {
         method: 'POST',

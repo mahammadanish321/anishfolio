@@ -47,6 +47,7 @@ function switchTab(tabName) {
     if (tabName === 'projects') renderProjects();
     if (tabName === 'achievements') loadAchievements();
     if (tabName === 'chatbot') loadChatbotSettings();
+    if (tabName === 'history') loadChatHistory();
     // Settings tab doesn't need data loading
 }
 
@@ -737,6 +738,122 @@ async function handleResumeUpload() {
     }
 }
 
+// Chat History Logic
+let historyPage = 1;
+let historyTotalPages = 1;
+
+async function loadChatHistory(page = 1) {
+    const container = document.getElementById('chatHistoryContainer');
+    const prevBtn = document.getElementById('prevHistoryBtn');
+    const nextBtn = document.getElementById('nextHistoryBtn');
+    const pageInfo = document.getElementById('historyPageInfo');
+
+    container.innerHTML = '<p style="text-align:center;">Loading history...</p>';
+
+    try {
+        const resp = await fetch(`${window.API_BASE}/api/chatbot/history?page=${page}&limit=10`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!resp.ok) throw new Error('Failed to fetch history');
+
+        const result = await resp.json();
+        const sessions = result.data || [];
+        const pagination = result.pagination || { page: 1, pages: 1 };
+
+        historyPage = pagination.page;
+        historyTotalPages = pagination.pages;
+
+        // Update Pagination Controls
+        pageInfo.textContent = `Page ${historyPage} of ${historyTotalPages}`;
+        prevBtn.onclick = () => loadChatHistory(historyPage - 1);
+        prevBtn.disabled = historyPage <= 1;
+
+        nextBtn.onclick = () => loadChatHistory(historyPage + 1);
+        nextBtn.disabled = historyPage >= historyTotalPages;
+
+        if (sessions.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">No chat history found.</p>';
+            return;
+        }
+
+        renderHistoryList(sessions, container);
+    } catch (error) {
+        console.error('History load error:', error);
+        container.innerHTML = '<p style="text-align:center; color: #ef4444;">Failed to load history.</p>';
+    }
+}
+
+function renderHistoryList(sessions, container) {
+    container.innerHTML = '';
+
+    sessions.forEach(session => {
+        const card = document.createElement('div');
+        card.className = 'history-card';
+        card.style.cssText = 'background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 15px; margin-bottom: 10px; border-radius: 8px;';
+
+        // Calculate Time Range
+        const msgCount = session.messages.length;
+        let timeRange = 'Just now';
+
+        if (msgCount > 0) {
+            const firstMsg = session.messages[0];
+            const lastMsg = session.messages[msgCount - 1];
+
+            // Assuming backend sends timestamps in messages, or we use session timestamps
+            const startTime = new Date(firstMsg.timestamp || session.createdAt || Date.now());
+            const endTime = new Date(lastMsg.timestamp || session.lastActivity || Date.now());
+
+            const timeOpt = { hour: 'numeric', minute: '2-digit' };
+            timeRange = `${startTime.toLocaleTimeString([], timeOpt)} - ${endTime.toLocaleTimeString([], timeOpt)}`;
+
+            // Add date if different days (optional, keeping simple for now)
+            const dateStr = startTime.toLocaleDateString();
+            timeRange += ` <span style="font-size:0.8em; opacity:0.7">(${dateStr})</span>`;
+        }
+
+        const lastMsgContent = session.messages[msgCount - 1]?.content || 'Empty session';
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary);">
+                <span><i class="fas fa-fingerprint"></i> ...${session.sessionId.slice(-6)}</span>
+                <span style="font-weight:bold; color:var(--text-primary);">${timeRange}</span>
+            </div>
+            <div style="font-weight: 500; margin-bottom: 5px;">${msgCount} Messages</div>
+            <div style="font-style: italic; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Last: "${lastMsgContent}"
+            </div>
+            <button class="btn-secondary" style="margin-top: 10px; font-size: 0.8rem;" onclick="toggleSessionDetails('${session._id}', this)">
+                View Transcript
+            </button>
+            <div class="session-transcript" id="transcript-${session._id}" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                ${session.messages.map(msg => `
+                    <div style="margin-bottom: 8px; font-size: 0.9rem;">
+                        <span style="font-weight: bold; color: ${msg.role === 'user' ? 'var(--primary-color)' : 'var(--accent-orange)'};">${msg.role.toUpperCase()}:</span>
+                        <div style="color: var(--text-primary); margin-left:10px; display:inline-block;">${msg.content}</div>
+                         <div style="font-size:0.75rem; color:var(--text-secondary); margin-left:10px;">
+                            ${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+window.toggleSessionDetails = function (id, btn) {
+    const transcript = document.getElementById(`transcript-${id}`);
+    if (transcript.style.display === 'none') {
+        transcript.style.display = 'block';
+        btn.textContent = 'Hide Transcript';
+    } else {
+        transcript.style.display = 'none';
+        btn.textContent = 'View Transcript';
+    }
+};
+
 // Global Exports
 window.switchTab = switchTab;
 window.openAddAchievementModal = openAddAchievementModal;
@@ -746,5 +863,6 @@ window.saveAchievement = saveAchievement;
 window.deleteAchievement = deleteAchievement;
 window.saveChatbotSettings = saveChatbotSettings;
 window.addFaqItem = addFaqItem;
+window.loadChatHistory = loadChatHistory;
 window.changePassword = changePassword;
 window.handleResumeUpload = handleResumeUpload;

@@ -30,11 +30,10 @@
 
         <header class="admin-header">
             <div class="header-left">
-                <h1>Project Manager</h1>
+                <h1>Hi Anish</h1>
             </div>
             <div class="header-right">
                 <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Portfolio</a>
-                <button onclick="logout()" class="btn-secondary">Logout</button>
             </div>
         </header>
 
@@ -43,6 +42,8 @@
             <div class="admin-tabs">
                 <button class="tab-btn active" onclick="switchTab('projects')">Projects</button>
                 <button class="tab-btn" onclick="switchTab('achievements')">Achievements</button>
+                <button class="tab-btn" onclick="switchTab('history')"><i class="fas fa-history"></i> Chat
+                    History</button>
                 <button class="tab-btn" onclick="switchTab('chatbot')">Chatbot</button>
                 <button class="tab-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</button>
             </div>
@@ -68,6 +69,27 @@
                 </div>
                 <div id="achievementsList" class="projects-grid">
                     <!-- Achievements loaded here -->
+                </div>
+            </div>
+
+            <!-- Chat History Section -->
+            <div id="tab-history" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Chat History</h2>
+                    <button onclick="loadChatHistory()" class="btn-secondary" title="Refresh"><i
+                            class="fas fa-sync-alt"></i></button>
+                </div>
+
+                <div id="chatHistoryContainer" class="chat-history-container">
+                    <!-- Sessions list will be injected here -->
+                    <p style="text-align:center; color: var(--text-secondary);">Select a session to view details.</p>
+                </div>
+
+                <div class="pagination-controls"
+                    style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                    <button id="prevHistoryBtn" class="btn-secondary" disabled>Previous</button>
+                    <span id="historyPageInfo" style="align-self: center;">Page 1</span>
+                    <button id="nextHistoryBtn" class="btn-secondary" disabled>Next</button>
                 </div>
             </div>
 
