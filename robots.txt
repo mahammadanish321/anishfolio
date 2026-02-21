@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://anishfolio.vercel.app/sitemap.xml
