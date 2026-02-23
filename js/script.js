@@ -610,12 +610,9 @@ function renderProjectCards(projects, grid) {
             imgSrc = window.API_BASE + imgSrc;
         }
 
-        const viewCount = project.views || Math.floor(Math.random() * 500) + 50;
 
         card.innerHTML = `
             <div class="portfolio-image">
-                ${project.featured ? '<div class="featured-badge">Featured</div>' : ''}
-                <div class="view-count-badge"><i class="fas fa-eye"></i> ${viewCount}</div>
                 <img src="${imgSrc}" alt="${project.title}" onerror="this.src='https://via.placeholder.com/400x250?text=Project'">
             </div>
             <div class="portfolio-content">
