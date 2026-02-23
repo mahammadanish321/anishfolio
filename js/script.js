@@ -1029,25 +1029,29 @@ function closeIndexLogin() {
     }
 }
 
-function checkIndexPassword() {
-    // Re-apply trim() for robustness, assuming password shouldn't have leading/trailing spaces
-    const password = document.getElementById('indexAdminPassword').value.trim();
+let isLoggingIn = false; // Guard against overlapping requests
+
+async function checkIndexPassword() {
+    if (isLoggingIn) return; // Block double-clicks / overlapping requests
+
+    const pwdField = document.getElementById('indexAdminPassword');
     const errorMsg = document.getElementById('indexLoginError');
+    const password = pwdField.value.trim();
 
-    console.log('Login attempt:', {
-        apiBase: window.API_BASE,
-        passwordLength: password.length,
-        passwordMasked: password.replace(/./g, '*') // Security: don't log plain text
-    });
+    if (!password) return;
 
-    fetch((window.API_BASE) + '/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ password })
-    }).then(async (r) => {
+    isLoggingIn = true;
+    errorMsg.textContent = ''; // Clear previous error
+
+    try {
+        const r = await fetch(window.API_BASE + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ password })
+        });
+
         const data = await r.json().catch(() => ({}));
-        // console.log('Login response:', r.status, data);
 
         if (r.ok) {
             // Save token if available (fallback for cross-site cookie issues)
@@ -1056,22 +1060,34 @@ function checkIndexPassword() {
             }
             window.location.href = 'admin.html';
         } else {
-            // console.warn('Login failed against:', window.API_BASE);
             const serverName = window.API_BASE.includes('localhost') ? 'Local Server' : 'Production Server';
-            errorMsg.innerHTML = `${data.message || 'Incorrect password'}<br><small style="opacity:0.7">(${serverName})</small>`;
+            errorMsg.innerHTML = `${data.error || data.message || 'Incorrect password'}<br><small style="opacity:0.7">(${serverName})</small>`;
             playClickSound();
+
+            // Shake animation
             const box = indexLoginOverlay.querySelector('.login-box');
             if (box) {
                 box.style.animation = 'shake 0.5s';
                 setTimeout(() => box.style.animation = '', 500);
             }
+
+            // Clear password field and re-focus so user can try again immediately
+            pwdField.value = '';
+            setTimeout(() => pwdField.focus(), 100);
         }
-    }).catch(err => {
+    } catch (err) {
         console.error('Login error:', err);
         const serverName = window.API_BASE.includes('localhost') ? 'Local Server' : 'Production Server';
         errorMsg.innerHTML = `Login failed. Check server connection.<br><small style="opacity:0.7">(${serverName})</small>`;
-    });
+
+        // Re-focus so user can retry
+        pwdField.value = '';
+        setTimeout(() => pwdField.focus(), 100);
+    } finally {
+        isLoggingIn = false; // Always release the guard
+    }
 }
+
 
 const pwdInput = document.getElementById('indexAdminPassword');
 if (pwdInput) {
