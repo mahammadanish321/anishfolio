@@ -1244,6 +1244,31 @@ function openProjectModal(project) {
         `<span class="modal-tech-tag">${tag}</span>`
     ).join('');
 
+    // Date display
+    const dateEl = document.getElementById('modalDate');
+    if (dateEl) {
+        const start = project.startDate;
+        const end = project.endDate;
+        const hasStart = start && (start.month || start.year);
+
+        if (hasStart) {
+            const startStr = [start.month, start.year].filter(Boolean).join(' ');
+            let dateStr;
+            if (project.isWorkingOn) {
+                dateStr = `<i class="fas fa-calendar-alt"></i> ${startStr} &ndash; <span class="still-working-badge">Still Working</span>`;
+            } else if (end && (end.month || end.year)) {
+                const endStr = [end.month, end.year].filter(Boolean).join(' ');
+                dateStr = `<i class="fas fa-calendar-alt"></i> ${startStr} &ndash; ${endStr}`;
+            } else {
+                dateStr = `<i class="fas fa-calendar-alt"></i> ${startStr}`;
+            }
+            dateEl.innerHTML = dateStr;
+            dateEl.style.display = 'flex';
+        } else {
+            dateEl.style.display = 'none';
+        }
+    }
+
     // Show Modal with forced styles
     modal.style.display = 'flex';
     modal.style.zIndex = '999999';
