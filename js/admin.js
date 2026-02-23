@@ -651,11 +651,11 @@ async function saveChatbotSettings() {
 
 
 async function changePassword() {
-    const currentPassword = document.getElementById('currentPassword').value;
+    const masterPassword = document.getElementById('masterPassword').value;
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!masterPassword || !newPassword || !confirmPassword) {
         alert("Please fill in all fields");
         return;
     }
@@ -677,7 +677,7 @@ async function changePassword() {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
-            body: JSON.stringify({ oldPassword: currentPassword, newPassword: newPassword }),
+            body: JSON.stringify({ masterPassword, newPassword, confirmPassword }),
             credentials: 'include'
         });
 
@@ -685,11 +685,11 @@ async function changePassword() {
 
         if (resp.ok && data.success) {
             alert(data.message || 'Password updated successfully');
-            document.getElementById('currentPassword').value = '';
+            document.getElementById('masterPassword').value = '';
             document.getElementById('newPassword').value = '';
             document.getElementById('confirmPassword').value = '';
         } else {
-            alert(data.message || 'Failed to update password');
+            alert(data.error || data.message || 'Failed to update password');
         }
     } catch (e) {
         console.error(e);
