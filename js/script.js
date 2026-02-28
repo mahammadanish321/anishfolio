@@ -525,8 +525,18 @@ async function loadProjects() {
 
     if (!grid) return;
 
-    // Show loading state
-    grid.innerHTML = '<p class="loading-text" style="color: var(--text-secondary);">Loading amazing projects...</p>';
+    // Show skeleton loader
+    grid.innerHTML = Array(3).fill(`
+        <div class="skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-content">
+                <div class="skeleton-line skeleton-title"></div>
+                <div class="skeleton-line skeleton-text"></div>
+                <div class="skeleton-line skeleton-text short"></div>
+                <div class="skeleton-line skeleton-tag"></div>
+            </div>
+        </div>
+    `).join('');
 
     let projects = [];
     try {
@@ -667,6 +677,11 @@ try {
 async function loadAchievements() {
     const track = document.getElementById('achievementsTrack');
     if (!track) return;
+
+    // Show skeleton loader for gallery
+    track.innerHTML = Array(6).fill(`
+        <div class="skeleton-gallery-item"></div>
+    `).join('');
 
     try {
         const resp = await fetch((window.API_BASE) + '/api/achievements');
