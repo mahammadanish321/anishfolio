@@ -74,10 +74,10 @@ function updateSoundIcon() {
     const icon = document.getElementById('soundIcon');
     if (icon) {
         if (isMuted) {
-            icon.className = 'fas fa-volume-mute';
+            icon.className = 'ph ph-speaker-slash';
             icon.style.color = 'var(--text-secondary)';
         } else {
-            icon.className = 'fas fa-volume-up';
+            icon.className = 'ph ph-speaker-high';
             icon.style.color = ''; // Reset to default (inherited)
         }
     }

@@ -85,6 +85,7 @@ body {
     line-height: 1.6;
     overflow-x: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
+    zoom: 0.8;
 }
 
 [data-theme="dark"] .ui-dock {
@@ -179,20 +180,23 @@ body {
    Skeleton Loaders
    =========================== */
 @keyframes skeleton-shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
+    0% {
+        background-position: -400px 0;
+    }
+
+    100% {
+        background-position: 400px 0;
+    }
 }
 
 .skeleton-card,
 .skeleton-line,
 .skeleton-img,
 .skeleton-gallery-item {
-    background: linear-gradient(
-        90deg,
-        var(--bg-secondary) 25%,
-        var(--bg-accent)    50%,
-        var(--bg-secondary) 75%
-    );
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            var(--bg-accent) 50%,
+            var(--bg-secondary) 75%);
     background-size: 800px 100%;
     animation: skeleton-shimmer 1.4s infinite linear;
     border-radius: 12px;
@@ -225,10 +229,24 @@ body {
     width: 100%;
 }
 
-.skeleton-line.skeleton-title { height: 20px; width: 70%; }
-.skeleton-line.skeleton-text  { width: 90%; }
-.skeleton-line.skeleton-text.short { width: 55%; }
-.skeleton-line.skeleton-tag   { height: 22px; width: 30%; border-radius: 20px; }
+.skeleton-line.skeleton-title {
+    height: 20px;
+    width: 70%;
+}
+
+.skeleton-line.skeleton-text {
+    width: 90%;
+}
+
+.skeleton-line.skeleton-text.short {
+    width: 55%;
+}
+
+.skeleton-line.skeleton-tag {
+    height: 22px;
+    width: 30%;
+    border-radius: 20px;
+}
 
 /* Achievement gallery skeleton */
 .skeleton-gallery-item {
@@ -244,12 +262,10 @@ body {
 [data-theme="dark"] .skeleton-line,
 [data-theme="dark"] .skeleton-img,
 [data-theme="dark"] .skeleton-gallery-item {
-    background: linear-gradient(
-        90deg,
-        #1a1a1a 25%,
-        #2a2a2a 50%,
-        #1a1a1a 75%
-    );
+    background: linear-gradient(90deg,
+            #1a1a1a 25%,
+            #2a2a2a 50%,
+            #1a1a1a 75%);
     background-size: 800px 100%;
     animation: skeleton-shimmer 1.4s infinite linear;
     border-color: #2a2a2a;
@@ -581,7 +597,7 @@ nav {
     position: relative;
     display: flex;
     align-items: center;
-    min-height: 100vh;
+    min-height: 125vh;
     padding: 120px 5% 60px;
     background: var(--cream-primary);
     overflow: hidden;
@@ -3777,7 +3793,6 @@ nav {
 .ui-dock-item:hover {
     transform: translateY(-8px) scale(1.2);
     background: rgba(44, 95, 93, 0.15);
-    color: var(--primary-color);
 }
 
 [data-theme='dark'] .ui-dock-item {
@@ -3787,7 +3802,6 @@ nav {
 
 [data-theme='dark'] .ui-dock-item:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: var(--accent-teal);
 }
 
 /* Specific Item Styles */
