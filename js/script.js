@@ -246,59 +246,63 @@ function shareProfile() {
     }
 }
 
-// Optimized Notification System with queue
-let notificationQueue = [];
-let isShowingNotification = false;
+// Notification System — instant replace (no queue, no delay on rapid use)
+let _activeNotif = null;
+let _activeNotifTimer = null;
 
 function showNotification(message) {
-    notificationQueue.push(message);
-    if (!isShowingNotification) {
-        processNotificationQueue();
-    }
-}
-
-function processNotificationQueue() {
-    if (notificationQueue.length === 0) {
-        isShowingNotification = false;
-        return;
+    // Kill any existing timer immediately
+    if (_activeNotifTimer) {
+        clearTimeout(_activeNotifTimer);
+        _activeNotifTimer = null;
     }
 
-    isShowingNotification = true;
-    const message = notificationQueue.shift();
+    // Remove old notification instantly (no fade-out wait)
+    if (_activeNotif && _activeNotif.parentNode) {
+        _activeNotif.remove();
+        _activeNotif = null;
+    }
 
-    const notification = document.createElement('div');
-    notification.style.cssText = `
+    const notif = document.createElement('div');
+    notif.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
         background: var(--primary-color);
         color: var(--bg-primary);
-        padding: 15px 25px;
+        padding: 12px 22px;
         border-radius: 10px;
-        z-index: 10000;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        max-width: 300px;
+        z-index: 99999;
+        font-size: 0.9rem;
+        font-weight: 600;
+        max-width: 280px;
         word-wrap: break-word;
         box-shadow: var(--shadow-lg);
-      `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+        transition: opacity 0.18s ease, transform 0.18s ease;
+        pointer-events: none;
+    `;
+    notif.textContent = message;
+    document.body.appendChild(notif);
+    _activeNotif = notif;
 
-    // Animate in
-    requestAnimationFrame(() => {
-        notification.style.transform = 'translateX(0)';
-    });
+    // Animate in — double rAF ensures the browser registers starting styles first
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        notif.style.opacity = '1';
+        notif.style.transform = 'translateY(0) scale(1)';
+    }));
 
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
+    // Auto-dismiss after 2s
+    _activeNotifTimer = setTimeout(() => {
+        notif.style.opacity = '0';
+        notif.style.transform = 'translateY(-6px) scale(0.95)';
         setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-            processNotificationQueue();
-        }, 300);
-    }, 3000);
+            if (notif.parentNode) notif.remove();
+            if (_activeNotif === notif) _activeNotif = null;
+        }, 180);
+        _activeNotifTimer = null;
+    }, 2000);
 }
 
 // Optimized Scroll to Top Button
@@ -341,9 +345,32 @@ const navToggle = document.getElementById('navToggle');
 const navLinks = document.getElementById('navLinks');
 const navLinkItems = document.querySelectorAll('.nav-link');
 
-// Navbar scroll effect
+// Navbar — scroll direction hide/show with delta
+let _lastScrollY = 0;
+const _scrollDelta = 5;
+
 function updateNavbar() {
-    navbar.classList.toggle('nav-scrolled', window.scrollY > 100);
+    const currentY = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Scrolled style (always update background/padding)
+    navbar.classList.toggle('nav-scrolled', currentY > 50);
+
+    // Don't hide/unhide if we haven't scrolled more than delta
+    if (Math.abs(_lastScrollY - currentY) <= _scrollDelta) return;
+
+    // Don't hide if mobile menu is open
+    if (navLinks.classList.contains('active')) {
+        _lastScrollY = currentY;
+        return;
+    }
+
+    if (currentY > _lastScrollY && currentY > 100) {
+        navbar.classList.add('nav-hidden');    // scroll DOWN → hide
+    } else {
+        navbar.classList.remove('nav-hidden'); // scroll UP  → show
+    }
+
+    _lastScrollY = currentY;
 }
 
 // Mobile menu toggle with animation
@@ -353,6 +380,7 @@ navToggle.addEventListener('click', (e) => {
     const isActive = navLinks.classList.contains('active');
     navLinks.classList.toggle('active');
     navToggle.classList.toggle('active');
+    navbar.classList.toggle('nav-menu-open'); // Sync with CSS rule
 
     // Prevent body scroll when menu is open
     document.body.style.overflow = isActive ? '' : 'hidden';
@@ -363,6 +391,7 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('nav') && navLinks.classList.contains('active')) {
         navLinks.classList.remove('active');
         navToggle.classList.remove('active');
+        navbar.classList.remove('nav-menu-open');
         document.body.style.overflow = '';
     }
 });
@@ -525,7 +554,7 @@ async function loadProjects() {
 
     if (!grid) return;
 
-    // Show skeleton loader
+    // Show skeleton loader — dimensions match real carousel card (320px × 450px)
     grid.innerHTML = Array(3).fill(`
         <div class="skeleton-card">
             <div class="skeleton-img"></div>
@@ -534,6 +563,7 @@ async function loadProjects() {
                 <div class="skeleton-line skeleton-text"></div>
                 <div class="skeleton-line skeleton-text short"></div>
                 <div class="skeleton-line skeleton-tag"></div>
+                <div class="skeleton-line skeleton-link"></div>
             </div>
         </div>
     `).join('');
@@ -657,20 +687,6 @@ function renderProjectCards(projects, grid) {
     }
 }
 
-
-// Real-time updates via Socket.IO
-try {
-    if (typeof io !== 'undefined') {
-        const socket = io(window.API_BASE);
-        socket.on('projects:created', () => loadProjects());
-        socket.on('projects:updated', () => loadProjects());
-        socket.on('projects:deleted', () => loadProjects());
-        // Achievements events
-        socket.on('achievements:created', () => loadAchievements());
-        socket.on('achievements:updated', () => loadAchievements());
-        socket.on('achievements:deleted', () => loadAchievements());
-    }
-} catch (e) { }
 
 // Achievements Logic
 // Achievements Logic (Marquee Style)
@@ -1404,7 +1420,7 @@ if (document.readyState === 'loading') {
 // Ensure hidden on full load (fallback)
 window.addEventListener('load', hideLoader);
 
-// Ensure modal is hidden on load
+// Unified Scroll Listener for Navbar & Dock
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('projectModal');
     if (modal) {
@@ -1412,17 +1428,19 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.remove('active');
     }
 
-    // Scroll-aware Dock Visibility
+    // Scroll-aware Visibility
     let lastScrollTop = 0;
     const dockContainer = document.querySelector('.ui-dock-container');
 
     window.addEventListener('scroll', () => {
+        // Handle Navbar
+        updateNavbar();
+
+        // Handle Dock
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down & past top
             dockContainer?.classList.add('dock-hidden');
         } else {
-            // Scrolling up
             dockContainer?.classList.remove('dock-hidden');
         }
         lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;

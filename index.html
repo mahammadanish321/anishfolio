@@ -2,6 +2,8 @@
 <html lang="en">
 
 <head>
+  <!-- ⚡ Theme flash prevention — must run before ANY CSS is parsed -->
+  <script>!function () { try { var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t) } catch (e) { } }();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2c5f5d" />
@@ -37,6 +39,27 @@
   <!-- Particle Background -->
   <div class="particles" id="particles"></div>
 
+  <!-- Liquid Glass SVG Distortion Filter (hidden, referenced in CSS) -->
+  <svg style="display:none;position:absolute;width:0;height:0" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="glass-distortion" x="-10%" y="-10%" width="120%" height="120%" filterUnits="objectBoundingBox">
+        <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence" />
+        <feComponentTransfer in="turbulence" result="mapped">
+          <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
+          <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+          <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+        </feComponentTransfer>
+        <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+        <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100"
+          lightingColor="white" result="specLight">
+          <fePointLight x="-200" y="-200" z="300" />
+        </feSpecularLighting>
+        <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage" />
+        <feDisplacementMap in="SourceGraphic" in2="softMap" scale="80" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
 
 
   <!-- UI Dock (Replaces FAB & Scattered Buttons) -->
@@ -46,16 +69,10 @@
       <!-- View Counter (Badge Style) -->
       <div class="ui-dock-item view-counter-dock" id="viewCountDock" title="Total Views">
         <i class="ph ph-eye"></i>
-        <span id="viewCountDisplay">...</span>
+        <span id="viewCountDisplay"><span class="loading-dots"><span></span><span></span><span></span></span></span>
       </div>
 
       <div class="ui-dock-separator"></div>
-
-      <!-- Theme Toggle -->
-      <button class="ui-dock-item" onclick="toggleTheme()" title="Toggle Theme">
-        <i class="ph ph-moon"></i>
-        <i class="ph ph-sun" style="display:none;"></i>
-      </button>
 
       <!-- Sound Toggle -->
       <button class="ui-dock-item" onclick="toggleSound()" title="Toggle Sound">
@@ -125,10 +142,7 @@
       <a href="#home" class="nav-link active">Home</a>
       <a href="#services" class="nav-link">Services</a>
       <a href="#portfolio" class="nav-link">Projects</a>
-      <a href="#experience" class="nav-link">Experience</a>
-      <a href="#skills" class="nav-link">Skills</a>
       <a href="#achievements" class="nav-link">Achievements</a>
-      <a href="#how-i-work" class="nav-link">How I Work</a>
       <a href="#contact" class="nav-link">Contact</a>
     </div>
     <button class="nav-toggle" id="navToggle">
@@ -467,7 +481,6 @@
       }
     }  
   </script>
-  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
   <script src="js/script.js"></script>
   <script type="module">
     import { view } from './js/view.js';

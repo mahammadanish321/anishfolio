@@ -72,6 +72,17 @@
     --primary-rgb: 74, 139, 135;
 }
 
+/* ─── Hidden Scrollbar (Immersive Feel) ────────── */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* Chrome/Safari/Edge */
+}
+
+* {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -94,7 +105,195 @@ body {
     box-shadow: var(--card-inner-shadow), 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
-/* Enhanced Loading Animation */
+/* =====================================================
+   LIQUID GLASS — Apple-style distortion glass system
+   Each element gets:
+     ::before → backdrop blur + SVG distortion (the glass lens)
+     ::after  → inner highlight ring (the signature detail)
+   ===================================================== */
+
+/* --- Shared inner highlight ring --- */
+/* Note: nav excluded — it sits at top of viewport so inset-top highlight
+   would show as a visible white line at the very edge of the screen */
+.ui-dock::after,
+.chatbot-container::after,
+.hero-badge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.55),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.35);
+    z-index: 9999;
+    transition: box-shadow 0.3s ease;
+}
+
+/* Dark mode — subtler highlight */
+[data-theme="dark"] .ui-dock::after,
+[data-theme="dark"] .chatbot-container::after,
+[data-theme="dark"] .hero-badge::after {
+    box-shadow:
+        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.18),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.10);
+}
+
+/* --- UI Dock — primary liquid glass element --- */
+.ui-dock {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+/* Glass distortion lens layer */
+.ui-dock::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    backdrop-filter: blur(3px) saturate(1.8);
+    -webkit-backdrop-filter: blur(3px) saturate(1.8);
+    filter: url(#glass-distortion);
+    pointer-events: none;
+}
+
+/* Ensure all dock children sit above glass layers */
+.ui-dock>* {
+    position: relative;
+    z-index: 10;
+}
+
+/* Dock hover — richer shadow on hover */
+.ui-dock:hover {
+    box-shadow: 0 6px 6px rgba(0, 0, 0, 0.22), 0 0 35px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Navbar liquid glass --- */
+nav {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+/* Navbar: no ::before distortion filter — nav is fixed at top,
+   backdrop-filter on the element itself is sufficient */
+
+/* --- Chatbot container liquid glass --- */
+.chatbot-container {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.chatbot-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    backdrop-filter: blur(4px) saturate(1.6);
+    -webkit-backdrop-filter: blur(4px) saturate(1.6);
+    filter: url(#glass-distortion);
+    pointer-events: none;
+}
+
+/* Chatbot children above glass layers */
+.chatbot-container>* {
+    position: relative;
+    z-index: 10;
+}
+
+/* --- Hero badge liquid glass --- */
+.hero-badge {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.hero-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    backdrop-filter: blur(2px) saturate(1.4);
+    -webkit-backdrop-filter: blur(2px) saturate(1.4);
+    filter: url(#glass-distortion);
+    pointer-events: none;
+}
+
+/* --- Service cards — subtle liquid glass touch --- */
+.service-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.service-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+        inset 1px 1px 1px 0 rgba(255, 255, 255, 0.45),
+        inset -1px -1px 1px 0 rgba(255, 255, 255, 0.25);
+    z-index: 9999;
+    transition: box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .service-card::after {
+    box-shadow:
+        inset 1px 1px 1px 0 rgba(255, 255, 255, 0.12),
+        inset -1px -1px 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* --- Portfolio cards — liquid glass border highlight --- */
+.portfolio-card {
+    position: relative;
+    isolation: isolate;
+}
+
+.portfolio-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+        inset 1px 1px 1px 0 rgba(255, 255, 255, 0.4),
+        inset -1px -1px 1px 0 rgba(255, 255, 255, 0.2);
+    z-index: 9999;
+    transition: box-shadow 0.3s ease;
+}
+
+.portfolio-card:hover::after {
+    box-shadow:
+        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.55),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="dark"] .portfolio-card::after {
+    box-shadow:
+        inset 1px 1px 1px 0 rgba(255, 255, 255, 0.1),
+        inset -1px -1px 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .portfolio-card:hover::after {
+    box-shadow:
+        inset 2px 2px 1px 0 rgba(255, 255, 255, 0.18),
+        inset -1px -1px 1px 1px rgba(255, 255, 255, 0.10);
+}
+
+/* --- Outer box shadow — liquid glass signature drop shadow --- */
+.ui-dock {
+    box-shadow: 0 6px 6px rgba(0, 0, 0, 0.2), 0 0 28px rgba(0, 0, 0, 0.10),
+        0 10px 30px rgba(0, 0, 0, 0.15);
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 2.2);
+}
+
 .loader {
     position: fixed;
     top: 0;
@@ -177,18 +376,19 @@ body {
 }
 
 /* ===========================
-   Skeleton Loaders
+   Skeleton Shimmer Animation
    =========================== */
 @keyframes skeleton-shimmer {
     0% {
-        background-position: -400px 0;
+        background-position: -600px 0;
     }
 
     100% {
-        background-position: 400px 0;
+        background-position: 600px 0;
     }
 }
 
+/* Base shimmer mixin applied to all skeleton parts */
 .skeleton-card,
 .skeleton-line,
 .skeleton-img,
@@ -197,58 +397,92 @@ body {
             var(--bg-secondary) 25%,
             var(--bg-accent) 50%,
             var(--bg-secondary) 75%);
-    background-size: 800px 100%;
-    animation: skeleton-shimmer 1.4s infinite linear;
+    background-size: 1200px 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
     border-radius: 12px;
 }
 
-/* Project card skeleton */
+/* ===========================
+   Project Card Skeleton
+   Matches .portfolio-card in carousel-view:
+   min/max-width: 320px, height: 450px
+   =========================== */
 .skeleton-card {
+    /* Mirror exact carousel card size */
+    min-width: 320px;
+    max-width: 320px;
+    height: 450px;
+    flex: 0 0 auto;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    border-radius: 16px;
     border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+    /* No shimmer on the card shell itself — children carry it */
+    background: var(--bg-secondary);
+    animation: none;
 }
 
+/* Image area — matches .portfolio-image height: 220px */
 .skeleton-img {
     width: 100%;
-    height: 200px;
-    border-radius: 12px 12px 0 0;
+    height: 220px;
+    flex-shrink: 0;
+    border-radius: 16px 16px 0 0;
 }
 
+/* Content area */
 .skeleton-content {
-    padding: 1.2rem;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    flex: 1;
 }
 
+/* Generic skeleton line */
 .skeleton-line {
     height: 14px;
     border-radius: 6px;
     width: 100%;
 }
 
+/* Title line — matches .portfolio-title font-size 1.25rem */
 .skeleton-line.skeleton-title {
-    height: 20px;
-    width: 70%;
+    height: 22px;
+    width: 68%;
 }
 
+/* Description lines */
 .skeleton-line.skeleton-text {
-    width: 90%;
+    height: 13px;
+    width: 92%;
 }
 
 .skeleton-line.skeleton-text.short {
-    width: 55%;
+    height: 13px;
+    width: 60%;
 }
 
+/* Tag pill — matches .project-tag */
 .skeleton-line.skeleton-tag {
-    height: 22px;
-    width: 30%;
+    height: 26px;
+    width: 35%;
     border-radius: 20px;
+    margin-top: auto;
 }
 
-/* Achievement gallery skeleton */
+/* View Details arrow link row */
+.skeleton-line.skeleton-link {
+    height: 18px;
+    width: 45%;
+    border-radius: 6px;
+}
+
+/* ===========================
+   Achievement Gallery Skeleton
+   =========================== */
 .skeleton-gallery-item {
     width: 220px;
     height: 160px;
@@ -257,18 +491,67 @@ body {
     border: 1px solid var(--border-color);
 }
 
-/* Enhanced dark mode skeleton */
-[data-theme="dark"] .skeleton-card,
+/* ===========================
+   Dark Mode Skeleton
+   =========================== */
+[data-theme="dark"] .skeleton-card {
+    background: #141414;
+    border-color: #2a2a2a;
+    box-shadow: none;
+    animation: none;
+}
+
 [data-theme="dark"] .skeleton-line,
 [data-theme="dark"] .skeleton-img,
 [data-theme="dark"] .skeleton-gallery-item {
     background: linear-gradient(90deg,
-            #1a1a1a 25%,
-            #2a2a2a 50%,
-            #1a1a1a 75%);
-    background-size: 800px 100%;
-    animation: skeleton-shimmer 1.4s infinite linear;
+            #1e1e1e 25%,
+            #2d2d2d 50%,
+            #1e1e1e 75%);
+    background-size: 1200px 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
     border-color: #2a2a2a;
+}
+
+/* ===========================
+   View Count Loading Dots
+   =========================== */
+@keyframes dot-bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+
+    40% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+.loading-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.loading-dots span {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: dot-bounce 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.30s;
 }
 
 /* Enhanced Particle Background */
@@ -461,10 +744,27 @@ nav {
     /* Primary Teal Tint */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    /* No border-bottom on base — appears as white line at very top of screen.
+       Border is added only when scrolled, via .nav-scrolled */
+    border-bottom: 1px solid transparent;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
     z-index: 1000;
-    transition: all 0.3s ease;
+    /* transition covers both visual props AND hide/show transform */
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.3s ease,
+        background 0.3s ease,
+        box-shadow 0.3s ease,
+        backdrop-filter 0.3s ease;
+}
+
+/* Hide nav by sliding it up off-screen */
+.nav-hidden {
+    transform: translateY(-110%) !important;
+}
+
+/* When mobile menu is open, never hide the nav */
+.nav-menu-open {
+    transform: translateY(0) !important;
 }
 
 [data-theme="dark"] nav {

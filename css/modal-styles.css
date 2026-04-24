@@ -596,6 +596,580 @@
 }
 
 @keyframes pulse-green {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.3); }
-    50% { box-shadow: 0 0 0 4px rgba(52, 199, 89, 0); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(52, 199, 89, 0);
+    }
+}
+
+backdrop-filter: blur(20px) saturate(180%);
+-webkit-backdrop-filter: blur(20px) saturate(180%);
+z-index: 20000;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 24px;
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.35s ease;
+}
+
+.project-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Dock always on top */
+.ui-dock-container {
+    z-index: 20001 !important;
+}
+
+/* ─── Modal Card ──────────────────────────────── */
+.project-modal-content {
+    background: #ffffff;
+    width: 820px;
+    max-width: 94vw;
+    max-height: 88vh;
+    border-radius: 24px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    /* Entry animation */
+    transform: translateY(20px) scale(0.97);
+    opacity: 0;
+    transition:
+        transform 0.45s cubic-bezier(0.34, 1.5, 0.64, 1),
+        opacity 0.35s ease;
+    /* Premium layered shadow */
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.06),
+        0 4px 16px rgba(0, 0, 0, 0.06),
+        0 16px 40px rgba(0, 0, 0, 0.10),
+        0 40px 80px rgba(0, 0, 0, 0.08);
+}
+
+.project-modal-overlay.active .project-modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+/* ─── Close Button ────────────────────────────── */
+.close-project-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.07);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    color: #333;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.close-project-modal:hover {
+    background: rgba(255, 59, 48, 0.1);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #ff3b30;
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* ─── Hero Image ──────────────────────────────── */
+.project-modal-image {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+    background: #f3f3f3;
+    flex-shrink: 0;
+}
+
+.project-modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.project-modal-overlay.active .project-modal-image img {
+    transform: scale(1.04);
+}
+
+/* Gradient for badges readability */
+.modal-image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 24px 18px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+/* ─── Image Badges ────────────────────────────── */
+.modal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 30px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: badge-in 0.5s ease both;
+}
+
+.modal-badge.featured {
+    background: rgba(255, 204, 0, 0.22);
+    color: #ffd700;
+    border-color: rgba(255, 204, 0, 0.3);
+    animation-delay: 0.15s;
+}
+
+.modal-badge.status {
+    background: rgba(52, 199, 89, 0.2);
+    color: #34c759;
+    border-color: rgba(52, 199, 89, 0.28);
+    animation-delay: 0.25s;
+}
+
+.modal-badge.view-count {
+    background: rgba(0, 122, 255, 0.18);
+    color: #007aff;
+    border-color: rgba(0, 122, 255, 0.25);
+    animation-delay: 0.05s;
+}
+
+@keyframes badge-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Modal Body ──────────────────────────────── */
+.project-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px 20px;
+    scroll-behavior: smooth;
+}
+
+/* Premium scrollbar */
+.project-modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.project-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.project-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(44, 95, 93, 0.25);
+    border-radius: 10px;
+}
+
+.project-modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* ─── Header: Title + Tags + Meta ────────────── */
+.project-modal-header h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 14px 0;
+    letter-spacing: -0.035em;
+    line-height: 1.15;
+}
+
+/* Tags */
+.project-modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 16px;
+}
+
+.project-modal-tag {
+    padding: 4px 12px;
+    background: rgba(44, 95, 93, 0.08);
+    color: var(--primary-color);
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(44, 95, 93, 0.16);
+    letter-spacing: 0.015em;
+    transition: background 0.2s, transform 0.2s;
+    cursor: default;
+}
+
+.project-modal-tag:hover {
+    background: rgba(44, 95, 93, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Meta row (date, status) */
+.modal-meta-row {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-bottom: 22px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #666;
+    font-size: 13.5px;
+}
+
+.meta-item i {
+    color: var(--primary-color);
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+/* Date + working badge */
+.modal-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem;
+    color: #777;
+    flex-wrap: wrap;
+}
+
+.modal-date i {
+    color: var(--primary-color);
+}
+
+.still-working-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    background: rgba(22, 163, 74, 0.08);
+    color: #16a34a;
+    border: 1px solid rgba(22, 163, 74, 0.22);
+    border-radius: 30px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.22);
+    }
+
+    50% {
+        box-shadow: 0 0 0 5px rgba(22, 163, 74, 0);
+    }
+}
+
+/* ─── Sections ────────────────────────────────── */
+.project-modal-section {
+    margin-bottom: 26px;
+}
+
+.project-modal-section h3 {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.project-modal-section h3 i {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+}
+
+/* Description */
+.project-modal-desc {
+    color: #555;
+    line-height: 1.82;
+    font-size: 14.5px;
+}
+
+.project-modal-desc p {
+    margin-bottom: 10px;
+}
+
+.project-modal-desc h1,
+.project-modal-desc h2,
+.project-modal-desc h3 {
+    color: #111;
+    margin: 18px 0 8px;
+    font-weight: 700;
+}
+
+.project-modal-desc code {
+    background: #f4f4f4;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    color: var(--primary-color);
+    border: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.project-modal-desc pre {
+    background: #f8f8f8;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    padding: 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+/* Feature list */
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.feature-list li {
+    padding: 9px 12px;
+    color: #555;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.55;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 9px;
+    border: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.feature-list li:hover {
+    background: rgba(44, 95, 93, 0.05);
+    border-color: rgba(44, 95, 93, 0.1);
+}
+
+.feature-list li i {
+    color: #16a34a;
+    font-size: 15px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Tech grid */
+.tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #fafafa;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    transition: all 0.25s ease;
+    cursor: default;
+}
+
+.tech-badge i {
+    color: var(--primary-color);
+}
+
+.tech-badge:hover {
+    background: rgba(44, 95, 93, 0.07);
+    border-color: rgba(44, 95, 93, 0.22);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(44, 95, 93, 0.1);
+}
+
+/* ─── Footer Actions ──────────────────────────── */
+.project-modal-footer {
+    padding: 16px 32px 18px;
+    background: #f9f9f9;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.modal-action-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border: none;
+    letter-spacing: 0.01em;
+    transition: all 0.28s cubic-bezier(0.34, 1.5, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ripple on click */
+.modal-action-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.modal-action-btn:active::before {
+    opacity: 1;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 14px rgba(44, 95, 93, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(44, 95, 93, 0.4);
+    background: var(--primary-dark);
+    color: white;
+}
+
+.btn-secondary {
+    background: white;
+    color: #333;
+    border: 1.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:hover {
+    border-color: rgba(44, 95, 93, 0.35);
+    color: var(--primary-color);
+    background: rgba(44, 95, 93, 0.04);
+    transform: translateY(-2px);
+}
+
+/* ─── Animations ──────────────────────────────── */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Mobile ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .project-modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .project-modal-content {
+        max-width: 100%;
+        max-height: 92dvh;
+        border-radius: 24px 24px 0 0;
+        transform: translateY(40px);
+    }
+
+    .project-modal-image {
+        height: 200px;
+    }
+
+    .project-modal-body {
+        padding: 20px;
+    }
+
+    .project-modal-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .modal-meta-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .project-modal-footer {
+        padding: 14px 20px 18px;
+        flex-direction: column;
+    }
+
+    .modal-action-btn {
+        width: 100%;
+    }
+
+    .close-project-modal {
+        top: 12px;
+        right: 12px;
+        width: 34px;
+        height: 34px;
+        font-size: 15px;
+    }
 }
